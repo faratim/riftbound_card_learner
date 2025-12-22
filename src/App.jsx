@@ -8,12 +8,12 @@ const SETS = [
 ]
 
 const DOMAINS = [
-  { id: 'body', name: 'Body', color: 'bg-green-600' },
-  { id: 'calm', name: 'Calm', color: 'bg-blue-600' },
-  { id: 'chaos', name: 'Chaos', color: 'bg-purple-600' },
-  { id: 'fury', name: 'Fury', color: 'bg-red-600' },
-  { id: 'mind', name: 'Mind', color: 'bg-cyan-600' },
-  { id: 'order', name: 'Order', color: 'bg-yellow-600' }
+  { id: 'body', name: 'Body', color: 'from-orange-500 to-orange-700', textColor: 'text-white' },
+  { id: 'calm', name: 'Calm', color: 'from-green-500 to-emerald-700', textColor: 'text-white' },
+  { id: 'chaos', name: 'Chaos', color: 'from-purple-500 to-purple-800', textColor: 'text-white' },
+  { id: 'fury', name: 'Fury', color: 'from-red-500 to-red-800', textColor: 'text-white' },
+  { id: 'mind', name: 'Mind', color: 'from-blue-400 to-blue-700', textColor: 'text-white' },
+  { id: 'order', name: 'Order', color: 'from-yellow-400 to-yellow-600', textColor: 'text-gray-900' }
 ]
 
 function App() {
@@ -182,10 +182,10 @@ function App() {
               <button
                 key={domain.id}
                 onClick={() => setSelectedDomain(domain.id)}
-                className={`p-4 rounded-lg transition ${domain.color} ${
+                className={`p-6 rounded-xl font-bold text-lg transition-all transform bg-gradient-to-br ${domain.color} ${domain.textColor} shadow-lg ${
                   selectedDomain === domain.id
-                    ? 'ring-4 ring-white'
-                    : 'opacity-70 hover:opacity-100'
+                    ? 'ring-4 ring-white scale-105 shadow-2xl'
+                    : 'opacity-80 hover:opacity-100 hover:scale-105 hover:shadow-xl'
                 }`}
               >
                 {domain.name}
