@@ -2,9 +2,9 @@ import { useState } from 'react'
 import cardData from './riftbound-cards.json'
 
 const SETS = [
-  { id: 'OGN', name: 'Origins' },
-  { id: 'OGS', name: 'Proving Grounds' },
-  { id: 'SFD', name: 'Spiritforged' }
+  { id: 'OGN', name: 'Origins', bgImage: '/images/origins.png', bgPosition: 'center 3%' },
+  { id: 'OGS', name: 'Proving Grounds', bgImage: '/images/proving-grounds.png', bgPosition: 'center' },
+  { id: 'SFD', name: 'Spiritforged', bgImage: '/images/spiritforged.jpg', bgPosition: 'center 27%' }
 ]
 
 const DOMAINS = [
@@ -176,25 +176,29 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-8">
-      <h1 className="text-4xl font-bold text-center mb-2">Riftbound Card Learner</h1>
-      <p className="text-center text-gray-400 mb-8">Select a set and domain, then click Start Learning.</p>
+    <div className="min-h-screen bg-gray-900 text-white px-3 py-6">
+      <h1 className="text-4xl font-bold text-center mb-8">Riftbound Card Learner</h1>
 
-      <div className="max-w-2xl mx-auto space-y-8">
+      <div className="max-w-2xl mx-auto space-y-6">
         <div>
           <h2 className="text-2xl font-semibold mb-4">Select a Set</h2>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="flex flex-col md:flex-row gap-3">
             {SETS.map(set => (
               <button
                 key={set.id}
                 onClick={() => setSelectedSet(set.id)}
-                className={`p-6 rounded-xl font-bold text-lg transition-all transform bg-gradient-to-br shadow-lg ${
+                className={`p-4 rounded-xl font-bold text-lg transition-all shadow-lg md:flex-1 relative overflow-hidden ${
                   selectedSet === set.id
-                    ? 'from-blue-500 to-blue-700 ring-4 ring-blue-400 scale-105 shadow-2xl'
-                    : 'from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700 hover:scale-105 hover:shadow-xl'
+                    ? 'ring-4 ring-blue-400 shadow-2xl'
+                    : 'hover:shadow-xl'
                 }`}
+                style={{
+                  backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url(${set.bgImage})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: set.bgPosition
+                }}
               >
-                {set.name}
+                <span className="relative z-10 drop-shadow-lg">{set.name}</span>
               </button>
             ))}
           </div>
@@ -202,15 +206,15 @@ function App() {
 
         <div>
           <h2 className="text-2xl font-semibold mb-4">Select a Domain (Color)</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {DOMAINS.map(domain => (
               <button
                 key={domain.id}
                 onClick={() => setSelectedDomain(domain.id)}
-                className={`p-6 rounded-xl font-bold text-lg transition-all transform bg-gradient-to-br ${domain.color} ${domain.textColor} shadow-lg ${
+                className={`p-4 rounded-xl font-bold text-lg transition-all bg-gradient-to-br ${domain.color} ${domain.textColor} shadow-lg ${
                   selectedDomain === domain.id
-                    ? 'ring-4 ring-white scale-105 shadow-2xl'
-                    : 'opacity-80 hover:opacity-100 hover:scale-105 hover:shadow-xl'
+                    ? 'ring-4 ring-white shadow-2xl'
+                    : 'opacity-80 hover:opacity-100 hover:shadow-xl'
                 }`}
               >
                 {domain.name}
@@ -219,11 +223,11 @@ function App() {
           </div>
         </div>
 
-        <div className="text-center">
+        <div className="text-center pt-2">
           <button
             onClick={startLearning}
             disabled={!selectedSet || !selectedDomain}
-            className={`px-8 py-4 text-xl font-bold rounded-lg transition ${
+            className={`w-full px-8 py-4 text-xl font-bold rounded-lg transition ${
               selectedSet && selectedDomain
                 ? 'bg-green-600 hover:bg-green-500'
                 : 'bg-gray-700 cursor-not-allowed opacity-50'
