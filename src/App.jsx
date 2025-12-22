@@ -66,25 +66,47 @@ function App() {
     const isUnitCard = currentCard.cardType.some(type => type.id === 'unit')
 
     return (
-      <div className="min-h-screen bg-gray-900 text-white p-8">
+      <div className="min-h-screen bg-gray-900 text-white p-0 md:p-8">
         <div className="max-w-2xl mx-auto">
           <button
             onClick={goBack}
-            className="mb-4 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded"
+            className="mt-3 mb-4 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded mx-3"
           >
             Back to Selection
           </button>
 
-          <div className="text-center mb-4">
-            <p className="text-lg">Card {currentCardIndex + 1} of {filteredCards.length}</p>
+          <div className="flex items-center justify-between mb-4 max-w-md mx-auto px-3">
+            <button
+              onClick={prevCard}
+              className="bg-gradient-to-br from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700 text-white rounded-lg px-4 py-2 transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
+              aria-label="Previous card"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+              </svg>
+              <span className="hidden sm:inline">Prev</span>
+            </button>
+
+            <p className="text-lg font-semibold">Card {currentCardIndex + 1} of {filteredCards.length}</p>
+
+            <button
+              onClick={nextCard}
+              className="bg-gradient-to-br from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700 text-white rounded-lg px-4 py-2 transition-all shadow-lg hover:shadow-xl flex items-center gap-2"
+              aria-label="Next card"
+            >
+              <span className="hidden sm:inline">Next</span>
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+              </svg>
+            </button>
           </div>
 
-          <div className="flex justify-center">
-            <div className="relative inline-block">
+          <div className="flex justify-center px-3">
+            <div className="relative max-w-md w-full">
               <img
                 src={currentCard.cardImage.url}
                 alt={currentCard.name}
-                className="max-w-md rounded-lg shadow-2xl"
+                className="w-full rounded-lg shadow-2xl"
               />
 
               {/* Top-left blur overlay (energy cost + domain symbols) */}
@@ -122,29 +144,31 @@ function App() {
                   style={{ backdropFilter: 'blur(20px)' }}
                 />
               )}
-
-              {/* Previous card button - Left side */}
-              <button
-                onClick={prevCard}
-                className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-3 transition backdrop-blur-sm"
-                aria-label="Previous card"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-6 h-6">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-                </svg>
-              </button>
-
-              {/* Next card button - Right side */}
-              <button
-                onClick={nextCard}
-                className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white rounded-full p-3 transition backdrop-blur-sm"
-                aria-label="Next card"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-6 h-6">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                </svg>
-              </button>
             </div>
+          </div>
+
+          <div className="flex items-center justify-between gap-4 mt-6 max-w-md mx-auto px-3">
+            <button
+              onClick={prevCard}
+              className="bg-gradient-to-br from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700 text-white rounded-xl px-6 py-3 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 text-lg font-semibold flex-1"
+              aria-label="Previous card"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-6 h-6">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
+              </svg>
+              <span>Previous</span>
+            </button>
+
+            <button
+              onClick={nextCard}
+              className="bg-gradient-to-br from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700 text-white rounded-xl px-6 py-3 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 text-lg font-semibold flex-1"
+              aria-label="Next card"
+            >
+              <span>Next</span>
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-6 h-6">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+              </svg>
+            </button>
           </div>
         </div>
       </div>
@@ -153,7 +177,8 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8">
-      <h1 className="text-4xl font-bold text-center mb-8">Riftbound Card Learner</h1>
+      <h1 className="text-4xl font-bold text-center mb-2">Riftbound Card Learner</h1>
+      <p className="text-center text-gray-400 mb-8">Select a set and domain, then click Start Learning.</p>
 
       <div className="max-w-2xl mx-auto space-y-8">
         <div>
@@ -163,10 +188,10 @@ function App() {
               <button
                 key={set.id}
                 onClick={() => setSelectedSet(set.id)}
-                className={`p-4 rounded-lg transition ${
+                className={`p-6 rounded-xl font-bold text-lg transition-all transform bg-gradient-to-br shadow-lg ${
                   selectedSet === set.id
-                    ? 'bg-blue-600 ring-4 ring-blue-400'
-                    : 'bg-gray-800 hover:bg-gray-700'
+                    ? 'from-blue-500 to-blue-700 ring-4 ring-blue-400 scale-105 shadow-2xl'
+                    : 'from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700 hover:scale-105 hover:shadow-xl'
                 }`}
               >
                 {set.name}
