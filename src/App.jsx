@@ -8,12 +8,12 @@ const SETS = [
 ]
 
 const DOMAINS = [
-  { id: 'body', name: 'Body', color: 'from-orange-500 to-orange-700', textColor: 'text-white' },
-  { id: 'calm', name: 'Calm', color: 'from-green-500 to-emerald-700', textColor: 'text-white' },
-  { id: 'chaos', name: 'Chaos', color: 'from-purple-500 to-purple-800', textColor: 'text-white' },
-  { id: 'fury', name: 'Fury', color: 'from-red-500 to-red-800', textColor: 'text-white' },
-  { id: 'mind', name: 'Mind', color: 'from-blue-400 to-blue-700', textColor: 'text-white' },
-  { id: 'order', name: 'Order', color: 'from-yellow-400 to-yellow-600', textColor: 'text-gray-900' }
+  { id: 'body', name: 'Body', color: 'from-orange-500 to-orange-700', textColor: 'text-white', bgImage: '/images/body.jpg' },
+  { id: 'calm', name: 'Calm', color: 'from-green-500 to-emerald-700', textColor: 'text-white', bgImage: '/images/calm.jpg' },
+  { id: 'chaos', name: 'Chaos', color: 'from-purple-500 to-purple-800', textColor: 'text-white', bgImage: '/images/chaos.jpg' },
+  { id: 'fury', name: 'Fury', color: 'from-red-500 to-red-800', textColor: 'text-white', bgImage: '/images/fury.jpg' },
+  { id: 'mind', name: 'Mind', color: 'from-blue-400 to-blue-700', textColor: 'text-white', bgImage: '/images/mind.jpg' },
+  { id: 'order', name: 'Order', color: 'from-yellow-400 to-yellow-600', textColor: 'text-gray-900', bgImage: '/images/order.jpg' }
 ]
 
 function App() {
@@ -193,12 +193,12 @@ function App() {
                     : 'hover:shadow-xl'
                 }`}
                 style={{
-                  backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url(${set.bgImage})`,
+                  backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url(${set.bgImage})`,
                   backgroundSize: 'cover',
                   backgroundPosition: set.bgPosition
                 }}
               >
-                <span className="relative z-10 drop-shadow-lg">{set.name}</span>
+                <span className="relative z-10" style={{ textShadow: '2px 2px 8px rgba(0, 0, 0, 0.9)' }}>{set.name}</span>
               </button>
             ))}
           </div>
@@ -211,13 +211,18 @@ function App() {
               <button
                 key={domain.id}
                 onClick={() => setSelectedDomain(domain.id)}
-                className={`p-4 rounded-xl font-bold text-lg transition-all bg-gradient-to-br ${domain.color} ${domain.textColor} shadow-lg ${
+                className={`p-4 rounded-xl font-bold text-lg transition-all shadow-lg relative overflow-hidden ${
                   selectedDomain === domain.id
                     ? 'ring-4 ring-white shadow-2xl'
-                    : 'opacity-80 hover:opacity-100 hover:shadow-xl'
+                    : 'hover:shadow-xl'
                 }`}
+                style={{
+                  backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0.65)), url(${domain.bgImage})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center 35%'
+                }}
               >
-                {domain.name}
+                <span className="relative z-10 text-white" style={{ textShadow: '2px 2px 8px rgba(0, 0, 0, 0.9)' }}>{domain.name}</span>
               </button>
             ))}
           </div>
