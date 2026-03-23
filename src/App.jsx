@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import cardData from './riftbound-cards.json'
+import ScoreKeeper from './ScoreKeeper'
 
 const SETS = [
   { id: 'OGN', name: 'Origins', bgImage: '/images/origins.png', bgPosition: 'center 3%' },
@@ -24,6 +25,7 @@ function App() {
   const [blurTopLeft, setBlurTopLeft] = useState(true)
   const [blurTopRight, setBlurTopRight] = useState(true)
   const [blurBottom, setBlurBottom] = useState(true)
+  const [showScoreKeeper, setShowScoreKeeper] = useState(false)
 
   const startLearning = () => {
     if (!selectedSet || !selectedDomain) return
@@ -59,6 +61,10 @@ function App() {
   const goBack = () => {
     setFilteredCards([])
     setCurrentCardIndex(0)
+  }
+
+  if (showScoreKeeper) {
+    return <ScoreKeeper onBack={() => setShowScoreKeeper(false)} />
   }
 
   if (filteredCards.length > 0) {
@@ -228,7 +234,7 @@ function App() {
           </div>
         </div>
 
-        <div className="text-center pt-2">
+        <div className="text-center pt-2 flex flex-col gap-3">
           <button
             onClick={startLearning}
             disabled={!selectedSet || !selectedDomain}
@@ -239,6 +245,12 @@ function App() {
             }`}
           >
             Start Learning
+          </button>
+          <button
+            onClick={() => setShowScoreKeeper(true)}
+            className="w-full px-8 py-4 text-xl font-bold rounded-lg bg-blue-700 hover:bg-blue-600 transition"
+          >
+            Score Keeper
           </button>
         </div>
       </div>
