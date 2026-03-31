@@ -180,7 +180,9 @@ function PlayerPanel({ idx, flipped, history, xp, xpFlash, onConquer, onHold, on
                   right: 0,
                   [xpFlash === 'up' ? 'top' : 'bottom']: 0,
                   height: '50%',
-                  background: `linear-gradient(180deg, rgba(233,195,73,0.24), rgba(233,195,73,0.06))`,
+                  background: xpFlash === 'up'
+                    ? 'linear-gradient(180deg, rgba(233,195,73,0.24) 0%, rgba(233,195,73,0.12) 42%, rgba(233,195,73,0) 100%)'
+                    : 'linear-gradient(0deg, rgba(233,195,73,0.24) 0%, rgba(233,195,73,0.12) 42%, rgba(233,195,73,0) 100%)',
                   opacity: 0,
                   animation: 'xp-flash 320ms ease-out forwards',
                   pointerEvents: 'none',
