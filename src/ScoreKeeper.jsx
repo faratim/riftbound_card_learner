@@ -1,129 +1,218 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+
+const GOLD       = '#e9c349'
+const GOLD_DIM   = 'rgba(233,195,73,0.15)'
+const GOLD_BORDER= 'rgba(233,195,73,0.25)'
+const PANEL_BG   = '#131316'
+const SG         = "'Space Grotesk', sans-serif"
+
+const randDie = () => Math.ceil(Math.random() * 6)
+
+const DOT_POSITIONS = {
+  1: [[50, 50]],
+  2: [[30, 30], [70, 70]],
+  3: [[30, 30], [50, 50], [70, 70]],
+  4: [[30, 30], [70, 30], [30, 70], [70, 70]],
+  5: [[30, 30], [70, 30], [50, 50], [30, 70], [70, 70]],
+  6: [[30, 25], [70, 25], [30, 50], [70, 50], [30, 75], [70, 75]],
+}
+
+function DieFace({ value, spinning, size = 64 }) {
+  const dots = DOT_POSITIONS[value] || DOT_POSITIONS[1]
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: size * 0.18, flexShrink: 0,
+      background: spinning ? 'rgba(233,195,73,0.04)' : 'rgba(233,195,73,0.12)',
+      border: `2px solid ${spinning ? 'rgba(233,195,73,0.25)' : 'rgba(233,195,73,0.5)'}`,
+      position: 'relative', transition: 'background 0.15s, border-color 0.15s',
+      boxShadow: spinning ? 'none' : `0 0 14px rgba(233,195,73,0.2)`,
+    }}>
+      {dots.map(([x, y], i) => (
+        <div key={i} style={{
+          position: 'absolute',
+          width: size * 0.17, height: size * 0.17,
+          borderRadius: '50%',
+          background: GOLD,
+          left: `${x}%`, top: `${y}%`,
+          transform: 'translate(-50%, -50%)',
+          opacity: spinning ? 0.4 : 1,
+          transition: 'opacity 0.15s',
+        }} />
+      ))}
+    </div>
+  )
+}
 
 function PlayerPanel({ idx, flipped, history, xp, onConquer, onHold, onUndo, onXPChange }) {
   const score = history.length
-  const bg = idx === 0
-    ? 'linear-gradient(160deg, #5C2B1A 0%, #3D1A0D 50%, #2A1008 100%)'
-    : 'linear-gradient(160deg, #2D3B2A 0%, #1E2829 60%, #261832 100%)'
-
-  // Screen-space orientation helpers
-  const decrementSide = flipped ? 'right' : 'left'
-  const scoreSide     = flipped ? 'left'  : 'right'
-  const conquerEdge   = flipped ? 'bottom': 'top'
-  const holdEdge      = flipped ? 'top'   : 'bottom'
-
-  // Show last 14 entries so the list doesn't get too long visually
-  const visibleHistory = history.slice(-14)
+  const visibleHistory = history.slice(-9)
   const startNum = history.length - visibleHistory.length + 1
 
   return (
-    <div className="flex-1 relative overflow-hidden" style={{ background: bg }}>
-      {/* ── Visual layer (rotated so each player reads from their end) ── */}
+    <div className="flex-1 overflow-hidden" style={{ background: PANEL_BG }}>
+      {/* Everything inside is rotated for the flipped player */}
       <div
-        className="absolute inset-0 pointer-events-none select-none"
+        className="w-full h-full flex flex-col"
         style={{ transform: flipped ? 'rotate(180deg)' : 'none' }}
       >
-        {/* Thin vertical divider separating left / right zones */}
-        <div className="absolute top-0 bottom-0 left-1/2 w-px bg-white/10" />
 
-        {/* CONQUER zone — right half, top */}
-        <div className="absolute top-0 right-0 w-1/2 h-1/2 flex flex-col items-center justify-center gap-1">
-          <div className="w-12 h-12 rounded-full bg-amber-200/35 flex items-center justify-center text-2xl font-bold text-amber-200 shadow-lg">+</div>
-          <span className="text-white/60 text-xs font-bold tracking-widest uppercase">Conquer</span>
-        </div>
+        {/* ── Score area (top ~60%) ── */}
+        <div className="flex-1 relative flex items-center overflow-hidden">
 
-        {/* Thin horizontal divider splitting the two right zones */}
-        <div className="absolute top-1/2 right-0 w-1/2 h-px bg-white/20" />
+          {/* Radial glow behind score */}
+          <div className="absolute inset-0 pointer-events-none" style={{
+            background: `radial-gradient(ellipse 60% 70% at 55% 50%, rgba(233,195,73,0.08) 0%, transparent 70%)`
+          }} />
 
-        {/* HOLD zone — right half, bottom */}
-        <div className="absolute bottom-0 right-0 w-1/2 h-1/2 flex flex-col items-center justify-center gap-1">
-          <div className="w-12 h-12 rounded-full bg-amber-200/35 flex items-center justify-center text-2xl font-bold text-amber-200 shadow-lg">+</div>
-          <span className="text-white/60 text-xs font-bold tracking-widest uppercase">Hold</span>
-        </div>
-
-        {/* Score — centered on full panel */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span
-            className="font-bold text-white leading-none"
-            style={{ fontSize: 'clamp(72px, 20vw, 130px)', textShadow: '0 4px 24px rgba(0,0,0,0.6)' }}
+          {/* Minus / undo — left quarter */}
+          <button
+            onClick={() => onUndo(idx)}
+            className="absolute left-0 top-0 bottom-0 flex items-center justify-center"
+            style={{ width: '28%', touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent' }}
           >
-            {score}
-          </span>
-        </div>
+            <span style={{
+              fontFamily: SG, fontWeight: 700,
+              fontSize: 'clamp(40px, 11vw, 64px)',
+              color: GOLD, opacity: 0.45, lineHeight: 1,
+            }}>−</span>
+          </button>
 
-        {/* XP display — top 25% of left half */}
-        <div className="absolute top-0 left-0 w-1/2 h-1/4 flex flex-col items-center justify-center gap-2">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-full bg-amber-200/35 flex items-center justify-center text-2xl font-bold text-amber-200">−</div>
-            <span className="text-white/80 text-lg font-bold min-w-[4rem] text-center">XP {xp}</span>
-            <div className="w-11 h-11 rounded-full bg-amber-200/35 flex items-center justify-center text-2xl font-bold text-amber-200">+</div>
+          {/* Score number — centered */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none">
+            <span style={{
+              fontFamily: SG, fontWeight: 700,
+              fontSize: 'clamp(80px, 22vw, 130px)',
+              color: GOLD, lineHeight: 1,
+              textShadow: `0 0 40px rgba(233,195,73,0.45), 0 0 80px rgba(233,195,73,0.18)`,
+            }}>{score}</span>
           </div>
+
+          {/* History — top-right, very subtle */}
+          {visibleHistory.length > 0 && (
+            <div className="absolute top-3 right-3 flex flex-col items-end gap-0 pointer-events-none select-none">
+              {visibleHistory.map((type, i) => (
+                <span key={i} style={{ fontFamily: SG, fontSize: 15, color: 'rgba(233,195,73,0.35)', lineHeight: 1.6 }}>
+                  {startNum + i}{type}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Thin horizontal divider below XP zone */}
-        <div className="absolute top-1/4 left-0 w-1/2 h-px bg-white/10" />
+        {/* ── Bottom row: CONQUER | HOLD | XP (40%) ── */}
+        <div className="flex shrink-0" style={{ height: '40%', borderTop: `1px solid ${GOLD_BORDER}` }}>
 
-        {/* Minus circle — bottom 75% of left half */}
-        <div className="absolute top-1/4 left-0 w-1/2 h-3/4 flex items-center justify-center">
-          <div className="w-20 h-20 rounded-full bg-amber-200/35 flex items-center justify-center text-4xl font-bold text-amber-200 shadow-lg">
-            −
+          {/* CONQUER — hero card, solid gold */}
+          <button
+            onClick={() => onConquer(idx)}
+            className="flex flex-col items-center active:brightness-110 transition-all"
+            style={{
+              flex: '0 0 33.33%',
+              background: `rgba(233,195,73,0.13)`,
+              borderRight: `1px solid ${GOLD_BORDER}`,
+              touchAction: 'manipulation',
+              WebkitTapHighlightColor: 'transparent',
+              justifyContent: 'center',
+              gap: 10,
+            }}
+          >
+            <span style={{ fontFamily: SG, fontWeight: 700, fontSize: 11, letterSpacing: '0.18em', color: GOLD, opacity: 0.75, textTransform: 'uppercase' }}>Conquer</span>
+            <div style={{
+              width: 52, height: 52, borderRadius: 14,
+              background: 'rgba(233,195,73,0.15)',
+              border: `1px solid ${GOLD_BORDER}`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{ width: 28, height: 28, opacity: 0.85 }}>
+                <path d="M14.5 17.5L3 6V3h3l11.5 11.5" />
+                <path d="M13 19l6-6" /><path d="M16 16l4 4" />
+                <path d="M8 8l-5 5" /><path d="M3.5 20.5l3-3" />
+              </svg>
+            </div>
+          </button>
+
+          {/* HOLD — secondary, dark */}
+          <button
+            onClick={() => onHold(idx)}
+            className="flex flex-col items-center active:brightness-125 transition-all"
+            style={{
+              flex: '0 0 33.33%',
+              background: 'rgba(255,255,255,0.03)',
+              borderLeft: `1px solid ${GOLD_BORDER}`,
+              borderRight: `1px solid ${GOLD_BORDER}`,
+              touchAction: 'manipulation',
+              WebkitTapHighlightColor: 'transparent',
+              justifyContent: 'center',
+              gap: 10,
+            }}
+          >
+            <span style={{ fontFamily: SG, fontWeight: 700, fontSize: 11, letterSpacing: '0.18em', color: `rgba(233,195,73,0.55)`, textTransform: 'uppercase' }}>Hold</span>
+            <div style={{
+              width: 52, height: 52, borderRadius: 14,
+              background: 'rgba(233,195,73,0.1)',
+              border: `1px solid ${GOLD_BORDER}`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <svg viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{ width: 26, height: 26, opacity: 0.8 }}>
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              </svg>
+            </div>
+          </button>
+
+          {/* XP — split tap zones with dedicated center lane */}
+          <div
+            style={{
+              flex: '0 0 33.33%',
+              background: 'rgba(255,255,255,0.015)',
+              borderLeft: `1px solid ${GOLD_BORDER}`,
+              display: 'grid',
+              gridTemplateRows: '1fr auto 1fr',
+              minHeight: 0,
+            }}
+          >
+            <button
+              onClick={(e) => { e.stopPropagation(); onXPChange(idx, 1) }}
+              className="flex items-center justify-center active:brightness-125 transition-all"
+              style={{
+                touchAction: 'manipulation',
+                WebkitTapHighlightColor: 'transparent',
+                background: 'transparent',
+              }}
+              aria-label="Increase XP"
+            >
+              <span style={{ color: GOLD, fontSize: 22, lineHeight: 1, opacity: 0.5, fontWeight: 300, pointerEvents: 'none' }}>+</span>
+            </button>
+
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+                padding: '6px 10px',
+                pointerEvents: 'none',
+              }}
+            >
+              <span style={{ fontFamily: SG, fontWeight: 700, fontSize: 11, letterSpacing: '0.18em', color: GOLD, opacity: 0.45, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>XP</span>
+              <div style={{ height: 1, background: GOLD_BORDER, width: '70%', maxWidth: 72 }} />
+              <span style={{ fontFamily: SG, fontWeight: 700, fontSize: 'clamp(28px, 4vw, 32px)', color: 'rgba(255,255,255,0.77)', lineHeight: 1, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{xp}</span>
+            </div>
+
+            <button
+              onClick={(e) => { e.stopPropagation(); onXPChange(idx, -1) }}
+              className="flex items-center justify-center active:brightness-125 transition-all"
+              style={{
+                touchAction: 'manipulation',
+                WebkitTapHighlightColor: 'transparent',
+                background: 'transparent',
+              }}
+              aria-label="Decrease XP"
+            >
+              <span style={{ color: GOLD, fontSize: 22, lineHeight: 1, opacity: 0.5, fontWeight: 300, pointerEvents: 'none' }}>−</span>
+            </button>
           </div>
-        </div>
 
-        {/* History list — left half, within minus zone, grows upward from bottom */}
-        <div className="absolute top-1/4 bottom-12 left-0 w-1/2 flex flex-col justify-end pl-4 pb-1 gap-0">
-          {visibleHistory.map((type, i) => (
-            <span key={i} className="text-white/50 font-mono text-lg leading-snug">
-              {startNum + i}{type}
-            </span>
-          ))}
-        </div>
-
-      </div>
-
-      {/* ── Invisible tap zones (screen-space) ── */}
-
-      {/* Undo — bottom 75% of the decrement side (below XP zone) */}
-      <div
-        className="absolute w-1/2 h-3/4 z-10 cursor-pointer active:bg-white/5 transition-colors"
-        style={{
-          [decrementSide]: 0,
-          [flipped ? 'top' : 'bottom']: 0,
-          touchAction: 'manipulation',
-        }}
-        onClick={() => onUndo(idx)}
-      />
-      {/* Conquer (player's top-right) */}
-      <div
-        className="absolute w-1/2 h-1/2 z-10 cursor-pointer active:bg-white/5 transition-colors"
-        style={{ [scoreSide]: 0, [conquerEdge]: 0, touchAction: 'manipulation' }}
-        onClick={() => onConquer(idx)}
-      />
-      {/* Hold (player's bottom-right) */}
-      <div
-        className="absolute w-1/2 h-1/2 z-10 cursor-pointer active:bg-white/5 transition-colors"
-        style={{ [scoreSide]: 0, [holdEdge]: 0, touchAction: 'manipulation' }}
-        onClick={() => onHold(idx)}
-      />
-
-      {/* XP interactive zone — top 25% of decrement side (screen-space) */}
-      <div
-        className="absolute w-1/2 h-1/4 z-20 flex items-center justify-center"
-        style={flipped
-          ? { right: 0, bottom: 0, transform: 'rotate(180deg)', touchAction: 'manipulation' }
-          : { left: 0, top: 0, touchAction: 'manipulation' }
-        }
-      >
-        <div className="flex items-center gap-3">
-          <button
-            onClick={(e) => { e.stopPropagation(); onXPChange(idx, -1) }}
-            className="w-11 h-11 rounded-full bg-transparent text-transparent font-bold flex items-center justify-center"
-          >−</button>
-          <span className="text-transparent text-lg font-bold min-w-[4rem] text-center select-none">XP {xp}</span>
-          <button
-            onClick={(e) => { e.stopPropagation(); onXPChange(idx, 1) }}
-            className="w-11 h-11 rounded-full bg-transparent text-transparent font-bold flex items-center justify-center"
-          >+</button>
         </div>
       </div>
     </div>
