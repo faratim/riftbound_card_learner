@@ -231,7 +231,8 @@ export default function ScoreKeeper({ onBack }) {
   const [histories, setHistories] = useState([[], []])
   const [xp, setXP] = useState([0, 0])
   const [showReset, setShowReset] = useState(false)
-  const [diceResult, setDiceResult] = useState(null)
+  const [diceModal, setDiceModal] = useState(null)
+  const rollIntervalRef = useRef(null)
 
   const [timerStart, setTimerStart] = useState(DEFAULT_SECONDS)
   const [timeLeft, setTimeLeft] = useState(DEFAULT_SECONDS)
@@ -259,20 +260,14 @@ export default function ScoreKeeper({ onBack }) {
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     document.body.style.touchAction = 'none'
-    return () => {
-      document.body.style.overflow = prev
-      document.body.style.touchAction = ''
-    }
+    return () => { document.body.style.overflow = prev; document.body.style.touchAction = '' }
   }, [])
 
   useEffect(() => {
     if (!timerRunning) return
     if (timeLeft <= 0) { setTimerRunning(false); return }
     const id = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) { setTimerRunning(false); return 0 }
-        return prev - 1
-      })
+      setTimeLeft(prev => { if (prev <= 1) { setTimerRunning(false); return 0 } return prev - 1 })
     }, 1000)
     return () => clearInterval(id)
   }, [timerRunning, timeLeft])
