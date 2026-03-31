@@ -240,30 +240,17 @@ export default function ScoreKeeper({ onBack }) {
   const [timerEditMins, setTimerEditMins] = useState('60')
 
   const handleConquer = (idx) => {
-    setHistories(prev => {
-      const next = [prev[0].slice(), prev[1].slice()]
-      next[idx].push('C')
-      return next
-    })
+    setHistories(prev => { const n = [prev[0].slice(), prev[1].slice()]; n[idx].push('C'); return n })
   }
-
   const handleHold = (idx) => {
-    setHistories(prev => {
-      const next = [prev[0].slice(), prev[1].slice()]
-      next[idx].push('H')
-      return next
-    })
+    setHistories(prev => { const n = [prev[0].slice(), prev[1].slice()]; n[idx].push('H'); return n })
   }
-
   const handleUndo = (idx) => {
     setHistories(prev => {
       if (prev[idx].length === 0) return prev
-      const next = [prev[0].slice(), prev[1].slice()]
-      next[idx].pop()
-      return next
+      const n = [prev[0].slice(), prev[1].slice()]; n[idx].pop(); return n
     })
   }
-
   const handleXPChange = (idx, delta) => {
     setXP(prev => { const n = [...prev]; n[idx] += delta; return n })
   }
