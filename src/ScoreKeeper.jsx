@@ -287,43 +287,77 @@ export default function ScoreKeeper({ onBack }) {
   const confirmTimerEdit = () => {
     const mins = Math.max(1, parseInt(timerEditMins) || 1)
     const secs = mins * 60
-    setTimerStart(secs)
-    setTimeLeft(secs)
-    setShowTimerEdit(false)
+    setTimerStart(secs); setTimeLeft(secs); setShowTimerEdit(false)
   }
 
   const rollDice = () => {
-    const winner = Math.floor(Math.random() * 2)
-    setDiceResult(winner)
-    setTimeout(() => setDiceResult(null), 3000)
+    if (rollIntervalRef.current) clearInterval(rollIntervalRef.current)
+
+    const finalP1 = [randDie(), randDie()]
+    const finalP2 = [randDie(), randDie()]
+    const p1Total = finalP1[0] + finalP1[1]
+    const p2Total = finalP2[0] + finalP2[1]
+    const winner = p1Total > p2Total ? 0 : p2Total > p1Total ? 1 : -1
+
+    setDiceModal({ phase: 'rolling', p1: [randDie(), randDie()], p2: [randDie(), randDie()] })
+
+    const DURATION = 1500
+    const TICK = 80
+    let elapsed = 0
+
+    rollIntervalRef.current = setInterval(() => {
+      elapsed += TICK
+      if (elapsed >= DURATION) {
+        clearInterval(rollIntervalRef.current)
+        rollIntervalRef.current = null
+        setDiceModal({ phase: 'result', p1: finalP1, p2: finalP2, winner, p1Total, p2Total })
+        if (winner === -1) {
+          setTimeout(() => rollDice(), 1400)
+        }
+      } else {
+        setDiceModal(prev => prev ? { ...prev, p1: [randDie(), randDie()], p2: [randDie(), randDie()] } : prev)
+      }
+    }, TICK)
   }
 
   const confirmReset = () => {
-    setHistories([[], []])
-    setXP([0, 0])
-    setShowReset(false)
-    setDiceResult(null)
+    setHistories([[], []]); setXP([0, 0]); setShowReset(false); setDiceModal(null)
+  }
+
+  const pct = timerStart > 0 ? timeLeft / timerStart : 0
+  const timerColor = timeLeft === 0 ? '#f87171' : pct < 0.25 ? GOLD : 'rgba(255,255,255,0.72)'
+
+  const ghostBtn = {
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    width: 40, height: 40, borderRadius: 10, cursor: 'pointer',
+    background: 'transparent', border: '1px solid rgba(255,255,255,0.1)',
+    color: 'rgba(255,255,255,0.4)', transition: 'all 0.15s',
+    WebkitTapHighlightColor: 'transparent',
   }
 
   return (
     <div className="flex flex-col overflow-hidden" style={{ height: '100dvh', touchAction: 'none', overscrollBehavior: 'none' }}>
-      <PlayerPanel
-        idx={0} flipped={true}
-        history={histories[0]} xp={xp[0]}
-        onConquer={handleConquer} onHold={handleHold} onUndo={handleUndo} onXPChange={handleXPChange}
-      />
+      <PlayerPanel idx={0} flipped={true} history={histories[0]} xp={xp[0]}
+        onConquer={handleConquer} onHold={handleHold} onUndo={handleUndo} onXPChange={handleXPChange} />
 
       {/* ── Toolbar ── */}
-      <div className="shrink-0 bg-gray-900 flex items-center px-3 z-30" style={{ height: 68 }}>
-        {/* Left: Reset + Dice */}
-        <div className="flex items-center gap-1">
-          <button onClick={() => setShowReset(true)} className="text-white/70 hover:text-white transition-colors p-2 rounded-lg" aria-label="Reset scores">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-7 h-7">
+      <div
+        className="shrink-0 flex items-center px-3 gap-2 z-30"
+        style={{
+          height: 68, fontFamily: SG,
+          background: '#0e0e11',
+          borderTop: `1px solid ${GOLD_BORDER}`,
+          borderBottom: `1px solid ${GOLD_BORDER}`,
+        }}
+      >
+        <div className="flex items-center gap-4">
+          <button onClick={() => setShowReset(true)} style={ghostBtn} aria-label="Reset">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" width={18} height={18}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
             </svg>
           </button>
-          <button onClick={rollDice} className="text-white/70 hover:text-white transition-colors p-2 rounded-lg" aria-label="Roll dice">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7">
+          <button onClick={rollDice} style={ghostBtn} aria-label="Roll dice">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" width={18} height={18}>
               <rect x="3" y="3" width="18" height="18" rx="3" />
               <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" stroke="none" />
               <circle cx="15.5" cy="8.5" r="1.5" fill="currentColor" stroke="none" />
@@ -334,94 +368,156 @@ export default function ScoreKeeper({ onBack }) {
           </button>
         </div>
 
-        {/* Center: Timer */}
         <div className="flex-1 flex justify-center">
           <button
             onClick={handleTimerClick}
-            className={`transition-colors leading-none ${
-              timeLeft === 0 ? 'text-red-400' : timerRunning ? 'text-white' : 'text-white/70 hover:text-white'
-            }`}
-            style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '2rem', letterSpacing: '0.05em' }}
-            aria-label="Timer"
+            className="relative px-3 py-1 rounded-xl transition-colors hover:bg-white/5"
+            style={{ WebkitTapHighlightColor: 'transparent' }}
           >
-            {formatTime(timeLeft)}
+            <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '2.2rem', letterSpacing: '0.06em', color: timerColor, lineHeight: 1 }}>
+              {formatTime(timeLeft)}
+            </span>
+            <span style={{ position: 'absolute', top: 'calc(100% - 6px)', left: 0, right: 0, textAlign: 'center', fontFamily: SG, fontSize: 8, fontWeight: 600, letterSpacing: '0.18em', color: GOLD, opacity: timerRunning ? 0 : 0.45, textTransform: 'uppercase', transition: 'opacity 0.2s', whiteSpace: 'nowrap' }}>
+              Tap to change
+            </span>
           </button>
         </div>
 
-        {/* Right: Play/Pause + Exit */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
           <button
             onClick={() => setTimerRunning(r => !r)}
-            className={`w-11 h-11 rounded-xl border flex items-center justify-center transition-colors ${
-              timerRunning
-                ? 'border-white/50 bg-white/15 hover:bg-white/25 text-white'
-                : 'border-amber-400/60 bg-amber-400/15 hover:bg-amber-400/25 text-amber-300'
-            }`}
-            aria-label={timerRunning ? 'Pause timer' : 'Start timer'}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              width: 44, height: 44, borderRadius: 12, cursor: 'pointer', transition: 'all 0.15s',
+              background: timerRunning ? 'rgba(255,255,255,0.08)' : GOLD_DIM,
+              border: `2px solid ${timerRunning ? 'rgba(255,255,255,0.2)' : GOLD_BORDER}`,
+              color: timerRunning ? 'rgba(255,255,255,0.8)' : GOLD,
+              WebkitTapHighlightColor: 'transparent',
+            }}
           >
             {timerRunning ? (
-              <svg viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7">
-                <rect x="5" y="4" width="4" height="16" rx="1" />
-                <rect x="15" y="4" width="4" height="16" rx="1" />
+              <svg viewBox="0 0 24 24" fill="currentColor" width={20} height={20}>
+                <rect x="5" y="4" width="4" height="16" rx="1.5" /><rect x="15" y="4" width="4" height="16" rx="1.5" />
               </svg>
             ) : (
-              <svg viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7">
+              <svg viewBox="0 0 24 24" fill="currentColor" width={20} height={20}>
                 <path d="M8 5.14v14l11-7-11-7z" />
               </svg>
             )}
           </button>
-          <button onClick={onBack} className="w-11 h-11 rounded-lg bg-amber-200/35 hover:bg-amber-200/55 active:bg-amber-200/65 transition-colors flex items-center justify-center" aria-label="Return to home">
-            <div className="w-5 h-5 rounded-sm bg-amber-900/70" />
+          <button
+            onClick={onBack}
+            style={{ ...ghostBtn, width: 44, height: 44, borderRadius: 12 }}
+          >
+            <div style={{ width: 18, height: 18, borderRadius: 4, background: 'rgba(233,195,73,0.5)' }} />
           </button>
         </div>
       </div>
 
-      <PlayerPanel
-        idx={1} flipped={false}
-        history={histories[1]} xp={xp[1]}
-        onConquer={handleConquer} onHold={handleHold} onUndo={handleUndo} onXPChange={handleXPChange}
-      />
+      <PlayerPanel idx={1} flipped={false} history={histories[1]} xp={xp[1]}
+        onConquer={handleConquer} onHold={handleHold} onUndo={handleUndo} onXPChange={handleXPChange} />
 
-      {/* ── Reset confirm modal ── */}
+      {/* ── Reset modal ── */}
       {showReset && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-800 border border-gray-700 rounded-2xl p-6 w-full max-w-xs shadow-2xl flex flex-col gap-4">
+        <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50 p-4">
+          <div className="rounded-2xl p-6 w-full max-w-xs flex flex-col gap-4" style={{ background: '#1a1a1f', border: `1px solid ${GOLD_BORDER}`, fontFamily: SG }}>
             <h3 className="text-white text-xl font-bold text-center">Reset all scores?</h3>
-            <p className="text-white/60 text-sm text-center">All scores and XP will be reset to 0.</p>
-            <button onClick={confirmReset} className="bg-red-600 hover:bg-red-500 active:bg-red-700 text-white rounded-xl py-3 text-lg font-bold transition-colors">Reset</button>
-            <button onClick={() => setShowReset(false)} className="text-white/50 hover:text-white/70 text-sm transition-colors">Cancel</button>
+            <p className="text-center text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>All scores and XP will be cleared.</p>
+            <button onClick={confirmReset} className="rounded-xl py-3 text-base font-bold" style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.35)', color: '#fca5a5' }}>Reset</button>
+            <button onClick={() => setShowReset(false)} className="text-sm" style={{ color: 'rgba(255,255,255,0.3)' }}>Cancel</button>
           </div>
         </div>
       )}
 
       {/* ── Timer edit modal ── */}
       {showTimerEdit && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-800 border border-gray-700 rounded-2xl p-6 w-full max-w-xs shadow-2xl flex flex-col gap-4">
+        <div className="fixed inset-0 bg-black/75 flex items-center justify-center z-50 p-4">
+          <div className="rounded-2xl p-6 w-full max-w-xs flex flex-col gap-4" style={{ background: '#1a1a1f', border: `1px solid ${GOLD_BORDER}`, fontFamily: SG }}>
             <h3 className="text-white text-xl font-bold text-center">Set timer</h3>
             <div className="flex items-center justify-center gap-3">
               <input
-                type="number"
-                min="1"
-                max="999"
+                type="number" min="1" max="999"
                 value={timerEditMins}
                 onChange={e => setTimerEditMins(e.target.value)}
-                className="w-24 bg-gray-700 text-white text-center text-3xl font-mono font-bold rounded-xl py-3 border border-gray-600 focus:outline-none focus:border-amber-400"
+                className="w-24 text-center text-3xl font-bold rounded-xl py-3 focus:outline-none"
+                style={{ background: 'rgba(255,255,255,0.06)', border: `1px solid ${GOLD_BORDER}`, color: GOLD, fontFamily: "'Rajdhani', sans-serif" }}
               />
-              <span className="text-white/60 text-lg">min</span>
+              <span style={{ color: 'rgba(255,255,255,0.35)', fontFamily: SG }}>min</span>
             </div>
-            <button onClick={confirmTimerEdit} className="bg-amber-600 hover:bg-amber-500 active:bg-amber-700 text-white rounded-xl py-3 text-lg font-bold transition-colors">Set</button>
-            <button onClick={() => setShowTimerEdit(false)} className="text-white/50 hover:text-white/70 text-sm transition-colors">Cancel</button>
+            <button onClick={confirmTimerEdit} className="rounded-xl py-3 text-base font-bold" style={{ background: GOLD_DIM, border: `1px solid ${GOLD_BORDER}`, color: GOLD }}>Set</button>
+            <button onClick={() => setShowTimerEdit(false)} className="text-sm" style={{ color: 'rgba(255,255,255,0.3)' }}>Cancel</button>
           </div>
         </div>
       )}
 
-      {/* ── Dice result toast ── */}
-      {diceResult !== null && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
-          <div className="bg-gray-900/95 border border-gray-600 rounded-2xl px-8 py-6 shadow-2xl text-center">
-            <p className="text-white/60 text-sm mb-1">Chosen by fate</p>
-            <p className="text-white text-2xl font-bold">Player {diceResult + 1} decides!</p>
+      {/* ── Dice modal ── */}
+      {diceModal !== null && (
+        <div
+          className="fixed inset-0 flex items-center justify-center z-50"
+          style={{ background: 'rgba(0,0,0,0.8)' }}
+          onClick={() => { if (diceModal.phase === 'result' && diceModal.winner !== -1) { if (rollIntervalRef.current) clearInterval(rollIntervalRef.current); setDiceModal(null) } }}
+        >
+          <div
+            className="rounded-2xl p-6 flex flex-col gap-5 w-full max-w-sm mx-4"
+            style={{ background: '#1a1a1f', border: `1px solid ${GOLD_BORDER}`, fontFamily: SG }}
+            onClick={e => e.stopPropagation()}
+          >
+            <p className="text-center text-xs font-semibold tracking-widest uppercase" style={{ color: 'rgba(233,195,73,0.45)' }}>
+              {diceModal.phase === 'rolling' ? 'Rolling…' : diceModal.winner === -1 ? 'Tie — Rolling again…' : 'Chosen by fate'}
+            </p>
+
+            <div className="flex items-center justify-center gap-6">
+              {/* Top player (idx 0, flipped) */}
+              <div className="flex flex-col items-center gap-3 flex-1">
+                <span className="text-xs font-bold tracking-widest uppercase" style={{ color: 'rgba(255,255,255,0.35)' }}>Top</span>
+                <div className="flex gap-2">
+                  <DieFace value={diceModal.p1[0]} spinning={diceModal.phase === 'rolling'} />
+                  <DieFace value={diceModal.p1[1]} spinning={diceModal.phase === 'rolling'} />
+                </div>
+                {diceModal.phase === 'result' && (
+                  <span style={{ fontFamily: SG, fontWeight: 700, fontSize: 22, color: diceModal.winner === 0 ? GOLD : 'rgba(255,255,255,0.3)', lineHeight: 1 }}>
+                    {diceModal.p1Total}
+                  </span>
+                )}
+              </div>
+
+              {/* Bottom player (idx 1) */}
+              <div className="flex flex-col items-center gap-3 flex-1">
+                <span className="text-xs font-bold tracking-widest uppercase" style={{ color: 'rgba(255,255,255,0.35)' }}>Bottom</span>
+                <div className="flex gap-2">
+                  <DieFace value={diceModal.p2[0]} spinning={diceModal.phase === 'rolling'} />
+                  <DieFace value={diceModal.p2[1]} spinning={diceModal.phase === 'rolling'} />
+                </div>
+                {diceModal.phase === 'result' && (
+                  <span style={{ fontFamily: SG, fontWeight: 700, fontSize: 22, color: diceModal.winner === 1 ? GOLD : 'rgba(255,255,255,0.3)', lineHeight: 1 }}>
+                    {diceModal.p2Total}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {diceModal.phase === 'result' && diceModal.winner !== -1 && (
+              <>
+                <div className="flex flex-col items-center gap-2">
+                  <svg className="animate-bounce" viewBox="0 0 60 80" width={64} height={84} style={{ filter: `drop-shadow(0 0 12px rgba(233,195,73,0.65))` }}>
+                    {diceModal.winner === 0
+                      ? <polygon points="30,0 60,38 42,38 42,80 18,80 18,38 0,38" fill={GOLD} />
+                      : <polygon points="30,80 0,42 18,42 18,0 42,0 42,42 60,42" fill={GOLD} />
+                    }
+                  </svg>
+                  <span style={{ fontFamily: SG, fontWeight: 800, fontSize: 18, color: GOLD, letterSpacing: '0.04em' }}>
+                    {diceModal.winner === 0 ? 'Top' : 'Bottom'} goes first
+                  </span>
+                </div>
+                <button
+                  onClick={() => { if (rollIntervalRef.current) clearInterval(rollIntervalRef.current); setDiceModal(null) }}
+                  className="rounded-xl py-3 text-sm font-bold"
+                  style={{ background: GOLD_DIM, border: `1px solid ${GOLD_BORDER}`, color: GOLD }}
+                >
+                  Got it
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}
