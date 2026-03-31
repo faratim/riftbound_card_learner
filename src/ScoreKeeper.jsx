@@ -43,7 +43,7 @@ function DieFace({ value, spinning, size = 64 }) {
   )
 }
 
-function PlayerPanel({ idx, flipped, history, xp, onConquer, onHold, onUndo, onXPChange }) {
+function PlayerPanel({ idx, flipped, history, xp, xpFlash, onConquer, onHold, onUndo, onXPChange }) {
   const score = history.length
   const visibleHistory = history.slice(-9)
   const startNum = history.length - visibleHistory.length + 1
@@ -168,8 +168,25 @@ function PlayerPanel({ idx, flipped, history, xp, onConquer, onHold, onUndo, onX
               display: 'grid',
               gridTemplateRows: '1fr auto 1fr',
               minHeight: 0,
+              position: 'relative',
+              overflow: 'hidden',
             }}
           >
+            {xpFlash && (
+              <div
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  right: 0,
+                  [xpFlash === 'up' ? 'top' : 'bottom']: 0,
+                  height: '50%',
+                  background: `linear-gradient(180deg, rgba(233,195,73,0.24), rgba(233,195,73,0.06))`,
+                  opacity: 0,
+                  animation: 'xp-flash 320ms ease-out forwards',
+                  pointerEvents: 'none',
+                }}
+              />
+            )}
             <button
               onClick={(e) => { e.stopPropagation(); onXPChange(idx, 1) }}
               className="flex items-center justify-center active:brightness-125 transition-all"
@@ -230,9 +247,13 @@ function formatTime(secs) {
 export default function ScoreKeeper({ onBack }) {
   const [histories, setHistories] = useState([[], []])
   const [xp, setXP] = useState([0, 0])
+  const [xpFlash, setXPFlash] = useState([null, null])
   const [showReset, setShowReset] = useState(false)
   const [diceModal, setDiceModal] = useState(null)
+  const [actionFlash, setActionFlash] = useState(null)
   const rollIntervalRef = useRef(null)
+  const actionFlashTimeoutRef = useRef(null)
+  const xpFlashTimeoutsRef = useRef([null, null])
 
   const [timerStart, setTimerStart] = useState(DEFAULT_SECONDS)
   const [timeLeft, setTimeLeft] = useState(DEFAULT_SECONDS)
@@ -242,9 +263,11 @@ export default function ScoreKeeper({ onBack }) {
 
   const handleConquer = (idx) => {
     setHistories(prev => { const n = [prev[0].slice(), prev[1].slice()]; n[idx].push('C'); return n })
+    setActionFlash({ id: Date.now(), idx, type: 'conquer' })
   }
   const handleHold = (idx) => {
     setHistories(prev => { const n = [prev[0].slice(), prev[1].slice()]; n[idx].push('H'); return n })
+    setActionFlash({ id: Date.now(), idx, type: 'hold' })
   }
   const handleUndo = (idx) => {
     setHistories(prev => {
@@ -254,6 +277,11 @@ export default function ScoreKeeper({ onBack }) {
   }
   const handleXPChange = (idx, delta) => {
     setXP(prev => { const n = [...prev]; n[idx] += delta; return n })
+    setXPFlash(prev => {
+      const next = [...prev]
+      next[idx] = delta > 0 ? 'up' : 'down'
+      return next
+    })
   }
 
   useEffect(() => {
@@ -262,6 +290,45 @@ export default function ScoreKeeper({ onBack }) {
     document.body.style.touchAction = 'none'
     return () => { document.body.style.overflow = prev; document.body.style.touchAction = '' }
   }, [])
+
+  useEffect(() => {
+    if (!actionFlash) return
+    if (actionFlashTimeoutRef.current) clearTimeout(actionFlashTimeoutRef.current)
+    actionFlashTimeoutRef.current = setTimeout(() => {
+      setActionFlash(null)
+      actionFlashTimeoutRef.current = null
+    }, 650)
+    return () => {
+      if (actionFlashTimeoutRef.current) {
+        clearTimeout(actionFlashTimeoutRef.current)
+        actionFlashTimeoutRef.current = null
+      }
+    }
+  }, [actionFlash])
+
+  useEffect(() => {
+    xpFlash.forEach((flash, idx) => {
+      if (!flash) return
+      if (xpFlashTimeoutsRef.current[idx]) clearTimeout(xpFlashTimeoutsRef.current[idx])
+      xpFlashTimeoutsRef.current[idx] = setTimeout(() => {
+        setXPFlash(prev => {
+          const next = [...prev]
+          next[idx] = null
+          return next
+        })
+        xpFlashTimeoutsRef.current[idx] = null
+      }, 320)
+    })
+
+    return () => {
+      xpFlashTimeoutsRef.current.forEach((timeoutId, idx) => {
+        if (timeoutId) {
+          clearTimeout(timeoutId)
+          xpFlashTimeoutsRef.current[idx] = null
+        }
+      })
+    }
+  }, [xpFlash])
 
   useEffect(() => {
     if (!timerRunning) return
@@ -332,7 +399,113 @@ export default function ScoreKeeper({ onBack }) {
 
   return (
     <div className="flex flex-col overflow-hidden" style={{ height: '100dvh', touchAction: 'none', overscrollBehavior: 'none' }}>
-      <PlayerPanel idx={0} flipped={true} history={histories[0]} xp={xp[0]}
+      <style>{`
+        @keyframes conquer-burst {
+          0% {
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(0.45);
+          }
+          18% {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(0.92);
+          }
+          100% {
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(1.7);
+          }
+        }
+
+        @keyframes conquer-ring {
+          0% {
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(0.35);
+          }
+          22% {
+            opacity: 0.6;
+          }
+          100% {
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(1.65);
+          }
+        }
+
+        @keyframes xp-flash {
+          0% {
+            opacity: 0;
+          }
+          25% {
+            opacity: 1;
+          }
+          100% {
+            opacity: 0;
+          }
+        }
+      `}</style>
+
+      {actionFlash && (
+        <div
+          key={actionFlash.id}
+          className="fixed inset-0 pointer-events-none z-40"
+          aria-hidden="true"
+        >
+          <div
+            style={{
+              position: 'absolute',
+              left: '50%',
+              top: '50%',
+              width: 'clamp(120px, 34vw, 220px)',
+              height: 'clamp(120px, 34vw, 220px)',
+              borderRadius: '999px',
+              border: '1px solid rgba(233,195,73,0.28)',
+              boxShadow: '0 0 40px rgba(233,195,73,0.18), inset 0 0 24px rgba(233,195,73,0.12)',
+              background: 'radial-gradient(circle, rgba(233,195,73,0.12) 0%, rgba(233,195,73,0.05) 35%, rgba(233,195,73,0) 72%)',
+              animation: 'conquer-ring 650ms cubic-bezier(0.18, 0.7, 0.2, 1) forwards',
+            }}
+          />
+
+          <div
+            style={{
+              position: 'absolute',
+              left: '50%',
+              top: '50%',
+              filter: 'drop-shadow(0 0 18px rgba(233,195,73,0.45)) drop-shadow(0 0 38px rgba(233,195,73,0.2))',
+              animation: 'conquer-burst 650ms cubic-bezier(0.18, 0.7, 0.2, 1) forwards',
+            }}
+          >
+            {actionFlash.type === 'conquer' ? (
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke={GOLD}
+                strokeWidth={1.8}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ width: 'clamp(88px, 24vw, 156px)', height: 'clamp(88px, 24vw, 156px)', opacity: 0.95 }}
+              >
+                <path d="M14.5 17.5L3 6V3h3l11.5 11.5" />
+                <path d="M13 19l6-6" />
+                <path d="M16 16l4 4" />
+                <path d="M8 8l-5 5" />
+                <path d="M3.5 20.5l3-3" />
+              </svg>
+            ) : (
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke={GOLD}
+                strokeWidth={1.8}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{ width: 'clamp(88px, 24vw, 156px)', height: 'clamp(88px, 24vw, 156px)', opacity: 0.95 }}
+              >
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              </svg>
+            )}
+          </div>
+        </div>
+      )}
+
+      <PlayerPanel idx={0} flipped={true} history={histories[0]} xp={xp[0]} xpFlash={xpFlash[0]}
         onConquer={handleConquer} onHold={handleHold} onUndo={handleUndo} onXPChange={handleXPChange} />
 
       {/* ── Toolbar ── */}
@@ -409,7 +582,7 @@ export default function ScoreKeeper({ onBack }) {
         </div>
       </div>
 
-      <PlayerPanel idx={1} flipped={false} history={histories[1]} xp={xp[1]}
+      <PlayerPanel idx={1} flipped={false} history={histories[1]} xp={xp[1]} xpFlash={xpFlash[1]}
         onConquer={handleConquer} onHold={handleHold} onUndo={handleUndo} onXPChange={handleXPChange} />
 
       {/* ── Reset modal ── */}
