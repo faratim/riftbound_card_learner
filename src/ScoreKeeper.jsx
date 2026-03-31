@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
 
 const GOLD       = '#e9c349'
+const GOLD_BRIGHT= '#f6de84'
 const GOLD_DIM   = 'rgba(233,195,73,0.15)'
 const GOLD_BORDER= 'rgba(233,195,73,0.25)'
 const PANEL_BG   = '#131316'
+const OBSIDIAN   = '#090b11'
 const SG         = "'Space Grotesk', sans-serif"
 
 const randDie = () => Math.ceil(Math.random() * 6)
@@ -47,9 +49,42 @@ function PlayerPanel({ idx, flipped, history, xp, xpFlash, onConquer, onHold, on
   const score = history.length
   const visibleHistory = history.slice(-9)
   const startNum = history.length - visibleHistory.length + 1
+  const theme = idx === 0
+    ? {
+        aura: 'rgba(228, 101, 60, 0.22)',
+        auraSoft: 'rgba(228, 101, 60, 0.08)',
+        panel: 'rgba(70, 28, 21, 0.28)',
+        action: 'rgba(228, 101, 60, 0.15)',
+      }
+    : {
+        aura: 'rgba(88, 163, 173, 0.2)',
+        auraSoft: 'rgba(88, 163, 173, 0.08)',
+        panel: 'rgba(18, 40, 48, 0.3)',
+        action: 'rgba(88, 163, 173, 0.14)',
+      }
 
   return (
-    <div className="flex-1 overflow-hidden" style={{ background: PANEL_BG }}>
+    <div
+      className="flex-1 overflow-hidden"
+      style={{
+        background: `
+          radial-gradient(circle at 50% 50%, ${theme.auraSoft} 0%, transparent 48%),
+          linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0)),
+          ${PANEL_BG}
+        `,
+        position: 'relative',
+      }}
+    >
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: `
+            linear-gradient(90deg, rgba(233,195,73,0.08), transparent 14%, transparent 86%, rgba(233,195,73,0.08)),
+            linear-gradient(180deg, rgba(255,255,255,0.03), transparent 24%, transparent 76%, rgba(255,255,255,0.02))
+          `,
+          opacity: 0.9,
+        }}
+      />
       {/* Everything inside is rotated for the flipped player */}
       <div
         className="w-full h-full flex flex-col"
@@ -58,11 +93,49 @@ function PlayerPanel({ idx, flipped, history, xp, xpFlash, onConquer, onHold, on
 
         {/* ── Score area (top ~60%) ── */}
         <div className="flex-1 relative flex items-center overflow-hidden">
+          <div
+            className="absolute inset-x-3 top-3 bottom-3 pointer-events-none"
+            style={{
+              border: `1px solid rgba(233,195,73,0.08)`,
+              borderRadius: 28,
+              background: `
+                linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0)),
+                linear-gradient(135deg, ${theme.panel}, rgba(0,0,0,0))
+              `,
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.035), 0 18px 36px rgba(0,0,0,0.16)',
+            }}
+          />
 
           {/* Radial glow behind score */}
           <div className="absolute inset-0 pointer-events-none" style={{
-            background: `radial-gradient(ellipse 60% 70% at 55% 50%, rgba(233,195,73,0.08) 0%, transparent 70%)`
+            background: `
+              radial-gradient(circle at 50% 50%, ${theme.aura} 0%, rgba(233,195,73,0.12) 22%, transparent 60%),
+              radial-gradient(ellipse 62% 70% at 50% 50%, rgba(233,195,73,0.08) 0%, transparent 72%)
+            `
           }} />
+
+          <div
+            className="absolute left-1/2 top-1/2 pointer-events-none"
+            style={{
+              width: 'clamp(170px, 45vw, 270px)',
+              height: 'clamp(170px, 45vw, 270px)',
+              transform: 'translate(-50%, -50%)',
+              borderRadius: '50%',
+              border: '1px solid rgba(233,195,73,0.14)',
+              boxShadow: `0 0 0 1px rgba(255,255,255,0.02) inset, 0 0 44px ${theme.auraSoft}`,
+            }}
+          />
+          <div
+            className="absolute left-1/2 top-1/2 pointer-events-none"
+            style={{
+              width: 'clamp(128px, 34vw, 190px)',
+              height: 'clamp(128px, 34vw, 190px)',
+              transform: 'translate(-50%, -50%) rotate(45deg)',
+              borderRadius: 28,
+              border: '1px solid rgba(233,195,73,0.08)',
+              background: 'linear-gradient(135deg, rgba(233,195,73,0.035), rgba(255,255,255,0.01))',
+            }}
+          />
 
           {/* Minus / undo — left quarter */}
           <button
@@ -74,24 +147,60 @@ function PlayerPanel({ idx, flipped, history, xp, xpFlash, onConquer, onHold, on
               fontFamily: SG, fontWeight: 700,
               fontSize: 'clamp(40px, 11vw, 64px)',
               color: GOLD, opacity: 0.45, lineHeight: 1,
+              textShadow: '0 0 18px rgba(233,195,73,0.14)',
             }}>−</span>
           </button>
 
           {/* Score number — centered */}
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none">
+            <div
+              style={{
+                fontFamily: SG,
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: '0.32em',
+                textTransform: 'uppercase',
+                color: 'rgba(233,195,73,0.52)',
+                marginBottom: 10,
+              }}
+            >
+              POINTS
+            </div>
             <span style={{
               fontFamily: SG, fontWeight: 700,
               fontSize: 'clamp(80px, 22vw, 130px)',
-              color: GOLD, lineHeight: 1,
-              textShadow: `0 0 40px rgba(233,195,73,0.45), 0 0 80px rgba(233,195,73,0.18)`,
+              color: GOLD_BRIGHT, lineHeight: 0.95,
+              letterSpacing: '-0.05em',
+              textShadow: `0 0 26px rgba(233,195,73,0.44), 0 0 72px rgba(233,195,73,0.16)`,
             }}>{score}</span>
+            <div
+              style={{
+                marginTop: 12,
+                width: 'clamp(90px, 22vw, 140px)',
+                height: 2,
+                borderRadius: 999,
+                background: 'linear-gradient(90deg, transparent, rgba(233,195,73,0.5), transparent)',
+              }}
+            />
           </div>
 
           {/* History — top-right, very subtle */}
           {visibleHistory.length > 0 && (
-            <div className="absolute top-3 right-3 flex flex-col items-end gap-0 pointer-events-none select-none">
+            <div
+              className="absolute top-4 right-4 flex flex-col items-end gap-1 pointer-events-none select-none"
+              style={{
+                padding: '10px 12px',
+                borderRadius: 16,
+                border: '1px solid rgba(233,195,73,0.1)',
+                background: 'linear-gradient(180deg, rgba(6,8,13,0.82), rgba(18,19,22,0.6))',
+                boxShadow: '0 12px 28px rgba(0,0,0,0.2)',
+              }}
+            >
+              <span style={{ fontFamily: SG, fontSize: 9, fontWeight: 700, color: 'rgba(233,195,73,0.45)', letterSpacing: '0.24em', textTransform: 'uppercase', marginBottom: 2 }}>
+                Log
+              </span>
               {visibleHistory.map((type, i) => (
-                <span key={i} style={{ fontFamily: SG, fontSize: 15, color: 'rgba(233,195,73,0.35)', lineHeight: 1.6 }}>
+                <span key={i} style={{ fontFamily: SG, fontSize: 13, color: type === 'C' ? 'rgba(246,222,132,0.78)' : 'rgba(194,224,228,0.72)', lineHeight: 1.2, letterSpacing: '0.08em' }}>
                   {startNum + i}{type}
                 </span>
               ))}
@@ -100,7 +209,7 @@ function PlayerPanel({ idx, flipped, history, xp, xpFlash, onConquer, onHold, on
         </div>
 
         {/* ── Bottom row: CONQUER | HOLD | XP (40%) ── */}
-        <div className="flex shrink-0" style={{ height: '40%', borderTop: `1px solid ${GOLD_BORDER}` }}>
+        <div className="flex shrink-0" style={{ height: '40%', borderTop: `1px solid ${GOLD_BORDER}`, background: 'linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.12))' }}>
 
           {/* CONQUER — hero card, solid gold */}
           <button
@@ -108,20 +217,22 @@ function PlayerPanel({ idx, flipped, history, xp, xpFlash, onConquer, onHold, on
             className="flex flex-col items-center active:brightness-110 transition-all"
             style={{
               flex: '0 0 33.33%',
-              background: `rgba(233,195,73,0.13)`,
+              background: `linear-gradient(180deg, rgba(233,195,73,0.16), ${theme.action})`,
               borderRight: `1px solid ${GOLD_BORDER}`,
               touchAction: 'manipulation',
               WebkitTapHighlightColor: 'transparent',
               justifyContent: 'center',
               gap: 10,
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)',
             }}
           >
-            <span style={{ fontFamily: SG, fontWeight: 700, fontSize: 11, letterSpacing: '0.18em', color: GOLD, opacity: 0.75, textTransform: 'uppercase' }}>Conquer</span>
+            <span style={{ fontFamily: SG, fontWeight: 700, fontSize: 11, letterSpacing: '0.22em', color: GOLD_BRIGHT, opacity: 0.95, textTransform: 'uppercase' }}>Conquer</span>
             <div style={{
-              width: 52, height: 52, borderRadius: 14,
-              background: 'rgba(233,195,73,0.15)',
+              width: 58, height: 58, borderRadius: 18,
+              background: 'linear-gradient(180deg, rgba(233,195,73,0.22), rgba(76,30,18,0.42))',
               border: `1px solid ${GOLD_BORDER}`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 14px 32px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.08)',
             }}>
               <svg viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{ width: 28, height: 28, opacity: 0.85 }}>
                 <path d="M14.5 17.5L3 6V3h3l11.5 11.5" />
@@ -137,21 +248,23 @@ function PlayerPanel({ idx, flipped, history, xp, xpFlash, onConquer, onHold, on
             className="flex flex-col items-center active:brightness-125 transition-all"
             style={{
               flex: '0 0 33.33%',
-              background: 'rgba(255,255,255,0.03)',
+              background: `linear-gradient(180deg, rgba(14,19,28,0.95), ${theme.panel})`,
               borderLeft: `1px solid ${GOLD_BORDER}`,
               borderRight: `1px solid ${GOLD_BORDER}`,
               touchAction: 'manipulation',
               WebkitTapHighlightColor: 'transparent',
               justifyContent: 'center',
               gap: 10,
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.03)',
             }}
           >
-            <span style={{ fontFamily: SG, fontWeight: 700, fontSize: 11, letterSpacing: '0.18em', color: `rgba(233,195,73,0.55)`, textTransform: 'uppercase' }}>Hold</span>
+            <span style={{ fontFamily: SG, fontWeight: 700, fontSize: 11, letterSpacing: '0.22em', color: `rgba(210,236,240,0.85)`, textTransform: 'uppercase' }}>Hold</span>
             <div style={{
-              width: 52, height: 52, borderRadius: 14,
-              background: 'rgba(233,195,73,0.1)',
+              width: 58, height: 58, borderRadius: 18,
+              background: 'linear-gradient(180deg, rgba(34,54,68,0.9), rgba(9,12,18,0.8))',
               border: `1px solid ${GOLD_BORDER}`,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 14px 32px rgba(0,0,0,0.24), inset 0 1px 0 rgba(255,255,255,0.06)',
             }}>
               <svg viewBox="0 0 24 24" fill="none" stroke={GOLD} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" style={{ width: 26, height: 26, opacity: 0.8 }}>
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
@@ -163,15 +276,25 @@ function PlayerPanel({ idx, flipped, history, xp, xpFlash, onConquer, onHold, on
           <div
             style={{
               flex: '0 0 33.33%',
-              background: 'rgba(255,255,255,0.015)',
+              background: 'linear-gradient(180deg, rgba(8,10,16,0.96), rgba(22,22,30,0.85))',
               borderLeft: `1px solid ${GOLD_BORDER}`,
               display: 'grid',
               gridTemplateRows: '1fr auto 1fr',
               minHeight: 0,
               position: 'relative',
               overflow: 'hidden',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.03)',
             }}
           >
+            <div
+              className="absolute inset-x-0 top-1/2 pointer-events-none"
+              style={{
+                height: 1,
+                background: 'linear-gradient(90deg, transparent, rgba(233,195,73,0.32), transparent)',
+                opacity: 0.45,
+                transform: 'translateY(-50%)',
+              }}
+            />
             {xpFlash && (
               <div
                 style={{
@@ -199,7 +322,7 @@ function PlayerPanel({ idx, flipped, history, xp, xpFlash, onConquer, onHold, on
               }}
               aria-label="Increase XP"
             >
-              <span style={{ color: GOLD, fontSize: 22, lineHeight: 1, opacity: 0.5, fontWeight: 300, pointerEvents: 'none' }}>+</span>
+              <span style={{ color: GOLD_BRIGHT, fontSize: 24, lineHeight: 1, opacity: 0.62, fontWeight: 300, pointerEvents: 'none' }}>+</span>
             </button>
 
             <div
@@ -208,14 +331,28 @@ function PlayerPanel({ idx, flipped, history, xp, xpFlash, onConquer, onHold, on
                 flexDirection: 'column',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: 6,
+                gap: 8,
                 padding: '6px 10px',
                 pointerEvents: 'none',
               }}
             >
-              <span style={{ fontFamily: SG, fontWeight: 700, fontSize: 11, letterSpacing: '0.18em', color: GOLD, opacity: 0.45, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>XP</span>
-              <div style={{ height: 1, background: GOLD_BORDER, width: '70%', maxWidth: 72 }} />
-              <span style={{ fontFamily: SG, fontWeight: 700, fontSize: 'clamp(28px, 4vw, 32px)', color: 'rgba(255,255,255,0.77)', lineHeight: 1, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{xp}</span>
+              <span style={{ fontFamily: SG, fontWeight: 700, fontSize: 11, letterSpacing: '0.26em', color: GOLD_BRIGHT, opacity: 0.52, textTransform: 'uppercase', whiteSpace: 'nowrap' }}>XP</span>
+              <div style={{ display: 'flex', gap: 6 }}>
+                {[0, 1, 2].map((gem) => (
+                  <span
+                    key={gem}
+                    style={{
+                      width: 7,
+                      height: 7,
+                      transform: 'rotate(45deg)',
+                      borderRadius: 2,
+                      border: '1px solid rgba(233,195,73,0.35)',
+                      background: gem === 1 ? 'rgba(233,195,73,0.26)' : 'rgba(233,195,73,0.08)',
+                    }}
+                  />
+                ))}
+              </div>
+              <span style={{ fontFamily: SG, fontWeight: 700, fontSize: 'clamp(28px, 4vw, 34px)', color: 'rgba(255,255,255,0.88)', lineHeight: 1, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', textShadow: '0 0 18px rgba(233,195,73,0.08)' }}>{xp}</span>
             </div>
 
             <button
@@ -228,7 +365,7 @@ function PlayerPanel({ idx, flipped, history, xp, xpFlash, onConquer, onHold, on
               }}
               aria-label="Decrease XP"
             >
-              <span style={{ color: GOLD, fontSize: 22, lineHeight: 1, opacity: 0.5, fontWeight: 300, pointerEvents: 'none' }}>−</span>
+              <span style={{ color: GOLD_BRIGHT, fontSize: 24, lineHeight: 1, opacity: 0.62, fontWeight: 300, pointerEvents: 'none' }}>−</span>
             </button>
           </div>
 
@@ -394,13 +531,23 @@ export default function ScoreKeeper({ onBack }) {
   const ghostBtn = {
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     width: 40, height: 40, borderRadius: 10, cursor: 'pointer',
-    background: 'transparent', border: '1px solid rgba(255,255,255,0.1)',
-    color: 'rgba(255,255,255,0.4)', transition: 'all 0.15s',
+    background: 'linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.01))',
+    border: '1px solid rgba(255,255,255,0.1)',
+    color: 'rgba(255,255,255,0.48)', transition: 'all 0.15s',
     WebkitTapHighlightColor: 'transparent',
+    boxShadow: '0 12px 30px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.04)',
   }
 
   return (
-    <div className="flex flex-col overflow-hidden" style={{ height: '100dvh', touchAction: 'none', overscrollBehavior: 'none' }}>
+    <div className="flex flex-col overflow-hidden" style={{
+      height: '100dvh',
+      touchAction: 'none',
+      overscrollBehavior: 'none',
+      background: `
+        radial-gradient(circle at top, rgba(233,195,73,0.07), transparent 24%),
+        linear-gradient(180deg, ${OBSIDIAN} 0%, #11141d 100%)
+      `,
+    }}>
       <style>{`
         @keyframes conquer-burst {
           0% {
@@ -515,9 +662,10 @@ export default function ScoreKeeper({ onBack }) {
         className="shrink-0 flex items-center px-3 gap-2 z-30"
         style={{
           height: 68, fontFamily: SG,
-          background: '#0e0e11',
+          background: 'linear-gradient(180deg, rgba(9,11,17,0.98), rgba(14,15,21,0.98))',
           borderTop: `1px solid ${GOLD_BORDER}`,
           borderBottom: `1px solid ${GOLD_BORDER}`,
+          boxShadow: '0 18px 34px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.03)',
         }}
       >
         <div className="flex items-center gap-4">
@@ -542,12 +690,18 @@ export default function ScoreKeeper({ onBack }) {
           <button
             onClick={handleTimerClick}
             className="relative px-3 py-1 rounded-xl transition-colors hover:bg-white/5"
-            style={{ WebkitTapHighlightColor: 'transparent' }}
+            style={{
+              WebkitTapHighlightColor: 'transparent',
+              minWidth: 172,
+              background: 'linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.01))',
+              border: '1px solid rgba(233,195,73,0.12)',
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)',
+            }}
           >
             <span style={{ fontFamily: "'Rajdhani', sans-serif", fontWeight: 700, fontSize: '2.2rem', letterSpacing: '0.06em', color: timerColor, lineHeight: 1 }}>
               {formatTime(timeLeft)}
             </span>
-            <span style={{ position: 'absolute', top: 'calc(100% - 6px)', left: 0, right: 0, textAlign: 'center', fontFamily: SG, fontSize: 8, fontWeight: 600, letterSpacing: '0.18em', color: GOLD, opacity: timerRunning ? 0 : 0.45, textTransform: 'uppercase', transition: 'opacity 0.2s', whiteSpace: 'nowrap' }}>
+            <span style={{ position: 'absolute', top: 'calc(100% - 10px)', left: 0, right: 0, textAlign: 'center', fontFamily: SG, fontSize: 8, fontWeight: 600, letterSpacing: '0.18em', color: GOLD, opacity: timerRunning ? 0 : 0.45, textTransform: 'uppercase', transition: 'opacity 0.2s', whiteSpace: 'nowrap' }}>
               Tap to change
             </span>
           </button>
@@ -559,10 +713,11 @@ export default function ScoreKeeper({ onBack }) {
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               width: 44, height: 44, borderRadius: 12, cursor: 'pointer', transition: 'all 0.15s',
-              background: timerRunning ? 'rgba(255,255,255,0.08)' : GOLD_DIM,
+              background: timerRunning ? 'linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03))' : 'linear-gradient(180deg, rgba(233,195,73,0.22), rgba(233,195,73,0.1))',
               border: `2px solid ${timerRunning ? 'rgba(255,255,255,0.2)' : GOLD_BORDER}`,
               color: timerRunning ? 'rgba(255,255,255,0.8)' : GOLD,
               WebkitTapHighlightColor: 'transparent',
+              boxShadow: '0 12px 28px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.05)',
             }}
           >
             {timerRunning ? (
@@ -579,7 +734,7 @@ export default function ScoreKeeper({ onBack }) {
             onClick={onBack}
             style={{ ...ghostBtn, width: 44, height: 44, borderRadius: 12 }}
           >
-            <div style={{ width: 18, height: 18, borderRadius: 4, background: 'rgba(233,195,73,0.5)' }} />
+            <div style={{ width: 18, height: 18, borderRadius: 4, background: 'linear-gradient(180deg, rgba(246,222,132,0.9), rgba(233,195,73,0.45))', boxShadow: '0 0 14px rgba(233,195,73,0.22)' }} />
           </button>
         </div>
       </div>
