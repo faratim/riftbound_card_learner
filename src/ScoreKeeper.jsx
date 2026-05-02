@@ -109,8 +109,8 @@ function PlayerPanel({ idx, flipped, history, xp, xpFlash, onConquer, onHold, on
           {/* Radial glow behind score */}
           <div className="absolute inset-0 pointer-events-none" style={{
             background: `
-              radial-gradient(circle at 50% 50%, ${theme.aura} 0%, rgba(233,195,73,0.12) 22%, transparent 60%),
-              radial-gradient(ellipse 62% 70% at 50% 50%, rgba(233,195,73,0.08) 0%, transparent 72%)
+              radial-gradient(circle at 50% 50%, ${theme.auraSoft} 0%, rgba(233,195,73,0.1) 20%, transparent 58%),
+              radial-gradient(ellipse 62% 70% at 50% 50%, rgba(233,195,73,0.06) 0%, transparent 70%)
             `
           }} />
 
@@ -122,7 +122,7 @@ function PlayerPanel({ idx, flipped, history, xp, xpFlash, onConquer, onHold, on
               transform: 'translate(-50%, -50%)',
               borderRadius: '50%',
               border: '1px solid rgba(233,195,73,0.14)',
-              boxShadow: `0 0 0 1px rgba(255,255,255,0.02) inset, 0 0 44px ${theme.auraSoft}`,
+              boxShadow: `0 0 0 1px rgba(255,255,255,0.02) inset, 0 0 28px ${theme.auraSoft}`,
             }}
           />
           <div
@@ -156,22 +156,24 @@ function PlayerPanel({ idx, flipped, history, xp, xpFlash, onConquer, onHold, on
             <div
               style={{
                 fontFamily: SG,
-                fontSize: 10,
+                fontSize: 9,
                 fontWeight: 700,
-                letterSpacing: '0.32em',
                 textTransform: 'uppercase',
-                color: 'rgba(233,195,73,0.52)',
+                letterSpacing: '0.18em',
+                color: 'rgba(233,195,73,0.54)',
                 marginBottom: 10,
+                textAlign: 'center',
+                transform: 'translateX(0.09em)',
               }}
             >
-              POINTS
+              Points
             </div>
             <span style={{
               fontFamily: SG, fontWeight: 700,
               fontSize: 'clamp(80px, 22vw, 130px)',
               color: GOLD_BRIGHT, lineHeight: 0.95,
               letterSpacing: '-0.05em',
-              textShadow: `0 0 26px rgba(233,195,73,0.44), 0 0 72px rgba(233,195,73,0.16)`,
+              textShadow: `0 0 20px rgba(233,195,73,0.34), 0 0 52px rgba(233,195,73,0.12)`,
             }}>{score}</span>
             <div
               style={{
@@ -187,7 +189,7 @@ function PlayerPanel({ idx, flipped, history, xp, xpFlash, onConquer, onHold, on
           {/* History — top-right, very subtle */}
           {visibleHistory.length > 0 && (
             <div
-              className="absolute top-4 right-4 flex flex-col items-end gap-1 pointer-events-none select-none"
+              className="absolute top-5 right-4 flex flex-col items-end gap-1 pointer-events-none select-none"
               style={{
                 padding: '10px 12px',
                 borderRadius: 16,
@@ -217,7 +219,7 @@ function PlayerPanel({ idx, flipped, history, xp, xpFlash, onConquer, onHold, on
             className="flex flex-col items-center active:brightness-110 transition-all"
             style={{
               flex: '0 0 33.33%',
-              background: `linear-gradient(180deg, rgba(233,195,73,0.16), ${theme.action})`,
+              background: `linear-gradient(180deg, rgba(14,19,28,0.95), ${theme.panel})`,
               borderRight: `1px solid ${GOLD_BORDER}`,
               touchAction: 'manipulation',
               WebkitTapHighlightColor: 'transparent',
