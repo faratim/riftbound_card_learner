@@ -1,11 +1,13 @@
 import { useState } from 'react'
 import cardData from './riftbound-cards.json'
 import ScoreKeeper from './ScoreKeeper'
+import GameTracker from './GameTracker'
 
 const SETS = [
   { id: 'OGN', name: 'Origins', bgImage: '/images/origins.png', bgPosition: 'center 3%' },
   { id: 'OGS', name: 'Proving Grounds', bgImage: '/images/proving-grounds.png', bgPosition: 'center' },
-  { id: 'SFD', name: 'Spiritforged', bgImage: '/images/spiritforged.jpg', bgPosition: 'center 27%' }
+  { id: 'SFD', name: 'Spiritforged', bgImage: '/images/spiritforged.jpg', bgPosition: 'center 27%' },
+  { id: 'UNL', name: 'Unleashed', bgImage: '/images/unleashed.jpg', bgPosition: 'center 20%' }
 ]
 
 const DOMAINS = [
@@ -18,6 +20,7 @@ const DOMAINS = [
 ]
 
 function App() {
+  const [mode, setMode] = useState('standard') // 'standard' | 'hidden'
   const [selectedSet, setSelectedSet] = useState(null)
   const [selectedDomain, setSelectedDomain] = useState(null)
   const [currentCardIndex, setCurrentCardIndex] = useState(0)
@@ -26,18 +29,24 @@ function App() {
   const [blurTopRight, setBlurTopRight] = useState(true)
   const [blurBottom, setBlurBottom] = useState(true)
   const [showScoreKeeper, setShowScoreKeeper] = useState(false)
+  const [showGameTracker, setShowGameTracker] = useState(false)
+
+  const canStart = mode === 'standard' ? (selectedSet && selectedDomain) : selectedDomain
 
   const startLearning = () => {
-    if (!selectedSet || !selectedDomain) return
+    if (!canStart) return
 
-    const cards = cardData.filter(card =>
-      card.set === selectedSet &&
-      card.domains.some(domain => domain.id === selectedDomain)
-    )
+    const cards = cardData.filter(card => {
+      const domainMatch = card.domains.some(d => d.id === selectedDomain)
+      if (mode === 'hidden') {
+        return card.text?.startsWith('<p>[Hidden]') &&
+          (!selectedSet || card.set === selectedSet) &&
+          domainMatch
+      }
+      return card.set === selectedSet && domainMatch
+    })
 
-    // Shuffle the cards randomly
     const shuffled = [...cards].sort(() => Math.random() - 0.5)
-
     setFilteredCards(shuffled)
     setCurrentCardIndex(0)
   }
@@ -65,6 +74,10 @@ function App() {
 
   if (showScoreKeeper) {
     return <ScoreKeeper onBack={() => setShowScoreKeeper(false)} />
+  }
+
+  if (showGameTracker) {
+    return <GameTracker onBack={() => setShowGameTracker(false)} />
   }
 
   if (filteredCards.length > 0) {
@@ -187,8 +200,43 @@ function App() {
 
       <div className="max-w-2xl mx-auto space-y-6">
         <div>
-          <h2 className="text-2xl font-semibold mb-4">Select a Set</h2>
+          <h2 className="text-2xl font-semibold mb-4">Mode</h2>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setMode('standard')}
+              className={`flex-1 p-4 rounded-xl font-bold text-lg transition-all shadow-lg ${
+                mode === 'standard' ? 'bg-blue-700 ring-4 ring-blue-400 shadow-2xl' : 'bg-gray-700 hover:bg-gray-600'
+              }`}
+            >
+              By Set
+            </button>
+            <button
+              onClick={() => setMode('hidden')}
+              className={`flex-1 p-4 rounded-xl font-bold text-lg transition-all shadow-lg ${
+                mode === 'hidden' ? 'bg-purple-800 ring-4 ring-purple-400 shadow-2xl' : 'bg-gray-700 hover:bg-gray-600'
+              }`}
+            >
+              Hidden Cards
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <h2 className="text-2xl font-semibold mb-4">
+            Select a Set
+            {mode === 'hidden' && <span className="text-sm font-normal text-gray-400 ml-2">(optional — leave unselected for all sets)</span>}
+          </h2>
           <div className="flex flex-col md:flex-row gap-3">
+            {mode === 'hidden' && (
+              <button
+                onClick={() => setSelectedSet(null)}
+                className={`p-4 rounded-xl font-bold text-lg transition-all shadow-lg md:flex-1 bg-gray-700 hover:bg-gray-600 ${
+                  selectedSet === null ? 'ring-4 ring-purple-400 shadow-2xl' : ''
+                }`}
+              >
+                All Sets
+              </button>
+            )}
             {SETS.map(set => (
               <button
                 key={set.id}
@@ -237,9 +285,9 @@ function App() {
         <div className="text-center pt-2 flex flex-col gap-3">
           <button
             onClick={startLearning}
-            disabled={!selectedSet || !selectedDomain}
+            disabled={!canStart}
             className={`w-full px-8 py-4 text-xl font-bold rounded-lg transition ${
-              selectedSet && selectedDomain
+              canStart
                 ? 'bg-green-600 hover:bg-green-500'
                 : 'bg-gray-700 cursor-not-allowed opacity-50'
             }`}
@@ -251,6 +299,12 @@ function App() {
             className="w-full px-8 py-4 text-xl font-bold rounded-lg bg-blue-700 hover:bg-blue-600 transition"
           >
             Score Keeper
+          </button>
+          <button
+            onClick={() => setShowGameTracker(true)}
+            className="w-full px-8 py-4 text-xl font-bold rounded-lg bg-yellow-600 hover:bg-yellow-500 transition"
+          >
+            Game Tracker
           </button>
         </div>
       </div>
