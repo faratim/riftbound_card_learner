@@ -52,7 +52,7 @@ export function FinalValue({ onPass }) {
   )
 }
 
-export function TwoDrop({ state, dispatch }) {
+export function TwoDrop({ state, dispatch, accent }) {
   const isMine = state.current_turn_player === 'me'
   const subtitle = isMine
     ? 'Were you able to play a two-drop?'
@@ -69,7 +69,7 @@ export function TwoDrop({ state, dispatch }) {
     }
     dispatch({ type: 'ADVANCE' })
   }
-  return <YesNoChoice title="Two-drop?" sublabel={subtitle} onPick={pick} />
+  return <YesNoChoice title="Two-drop?" sublabel={subtitle} onPick={pick} accent={accent} />
 }
 
 // ABCDEFGH normal-turn steps

@@ -7,6 +7,7 @@ const SCORE_TYPE_LABELS = { conquer: 'Conquer', hold: 'Hold', other: 'Other' }
 
 export default function ScoringScreen({ state, dispatch }) {
   const isMyTurn = state.current_turn_player === 'me'
+  const accentColor = isMyTurn ? '#e9c349' : '#e46540'
   const title = isMyTurn ? 'Your Scoring' : 'Their Scoring'
   const sublabel = isMyTurn
     ? 'Tap Conquer, Hold, or Other for each battlefield this turn.'
@@ -17,12 +18,13 @@ export default function ScoringScreen({ state, dispatch }) {
   const baronPit = state.has_baron_pit ? getBaronPitCard() : null
 
   const rows = [
-    { key: 'mine',      card: myBfCard,    label: 'Your Battlefield' },
-    { key: 'theirs',    card: theirBfCard, label: 'Their Battlefield' },
-    ...(baronPit ? [{ key: 'baron_pit', card: baronPit, label: 'Baron Pit' }] : []),
+    { key: 'mine',      card: myBfCard    },
+    { key: 'theirs',    card: theirBfCard },
+    ...(baronPit ? [{ key: 'baron_pit', card: baronPit }] : []),
   ]
 
   const [sideModalOpen, setSideModalOpen] = useState(false)
+  const [triggerPrompt, setTriggerPrompt] = useState(false)
 
   async function addBaronPit() {
     dispatch({ type: 'ADD_BARON_PIT' })
@@ -39,9 +41,11 @@ export default function ScoringScreen({ state, dispatch }) {
     dispatch({ type: 'ADVANCE' })
   }
 
+  const passLabel = isMyTurn ? 'Ready to Pass →' : 'Opponent Passes →'
+
   return (
     <div className="w-full max-w-md mx-auto">
-      <h2 className="text-2xl font-semibold text-center mb-1" style={{ color: '#e9c349' }}>{title}</h2>
+      <h2 className="text-2xl font-semibold text-center mb-1" style={{ color: accentColor }}>{title}</h2>
       <p className="text-gray-400 text-sm text-center mb-5">{sublabel}</p>
 
       <div className="space-y-6">
@@ -52,6 +56,7 @@ export default function ScoringScreen({ state, dispatch }) {
             state={state}
             dispatch={dispatch}
             scorer={state.current_turn_player}
+            onTrigger={() => setTriggerPrompt(true)}
           />
         ))}
       </div>
@@ -63,17 +68,13 @@ export default function ScoringScreen({ state, dispatch }) {
         >
           {isMyTurn ? 'Opponent Scored' : 'You Scored'}
         </button>
-        {!state.has_baron_pit ? (
+        {!state.has_baron_pit && (
           <button
             onClick={addBaronPit}
             className="py-3 rounded-lg text-sm font-medium bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-200"
           >
             + Add Baron Pit
           </button>
-        ) : (
-          <div className="py-3 rounded-lg text-sm font-medium bg-gray-900 border border-gray-800 text-gray-600 text-center">
-            Baron Pit added
-          </div>
         )}
       </div>
 
@@ -82,8 +83,21 @@ export default function ScoringScreen({ state, dispatch }) {
         className="w-full mt-5 py-5 rounded-lg text-lg font-semibold"
         style={{ background: 'linear-gradient(180deg, #e9c349 0%, #c69f2f 100%)', color: '#1a1a1a' }}
       >
-        Ready to Pass →
+        {passLabel}
       </button>
+
+      {triggerPrompt && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ background: 'rgba(0,0,0,0.75)' }}
+          onClick={() => setTriggerPrompt(false)}
+        >
+          <div className="text-center pointer-events-none">
+            <div className="text-4xl font-bold mb-3" style={{ color: '#e9c349' }}>Any Triggers?</div>
+            <div className="text-gray-400 text-sm">tap anywhere to dismiss</div>
+          </div>
+        </div>
+      )}
 
       {sideModalOpen && (
         <SideScoredModal
@@ -99,7 +113,7 @@ export default function ScoringScreen({ state, dispatch }) {
   )
 }
 
-function BattlefieldRow({ row, state, dispatch, scorer }) {
+function BattlefieldRow({ row, state, dispatch, scorer, onTrigger }) {
   const selection = getCurrentTurnSelection(state, row.key, scorer)
   const selectedType = selection?.score_type || null
   const selectedPoints = selection?.points ?? 1
@@ -115,7 +129,6 @@ function BattlefieldRow({ row, state, dispatch, scorer }) {
 
   async function setType(score_type) {
     if (!state.current_turn_id) return
-    // Toggle off if tapping the same option
     if (selectedType === score_type) {
       try {
         await api.deleteScoringEvent(selection.id)
@@ -133,6 +146,7 @@ function BattlefieldRow({ row, state, dispatch, scorer }) {
       try {
         const updated = await api.updateScoringEvent(selection.id, { score_type, points })
         dispatch({ type: 'REPLACE_SCORING_EVENT', event: updated })
+        onTrigger()
       } catch (err) {
         console.error('updateScoringEvent failed', err)
       }
@@ -147,6 +161,7 @@ function BattlefieldRow({ row, state, dispatch, scorer }) {
           points,
         })
         dispatch({ type: 'ADD_SCORING_EVENT', event: created })
+        onTrigger()
       } catch (err) {
         console.error('addScoringEvent failed', err)
       }
@@ -176,7 +191,7 @@ function BattlefieldRow({ row, state, dispatch, scorer }) {
             src={row.card.cardImage.url}
             alt={row.card.name || ''}
             className="absolute inset-0 w-full h-full object-cover"
-            style={{ opacity: 0.45 }}
+            style={{ opacity: 0.45, transform: 'scale(1.12)' }}
           />
         )}
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-3">
@@ -218,12 +233,9 @@ function BattlefieldRow({ row, state, dispatch, scorer }) {
         </div>
       </div>
 
-      <div className="flex items-baseline justify-between mt-2 px-1">
-        <div className="font-semibold text-white text-base">{row.label}</div>
-        {row.card?.name && (
-          <div className="text-sm text-gray-400 truncate ml-2">{row.card.name}</div>
-        )}
-      </div>
+      {row.card?.name && (
+        <div className="text-sm text-gray-400 mt-2 px-1">{row.card.name}</div>
+      )}
     </div>
   )
 }
@@ -296,8 +308,7 @@ function SideScoredModal({ state, dispatch, rows, scorer, title, onClose }) {
           <div className="text-xs uppercase tracking-wider text-gray-500 mb-2">Battlefield</div>
           <div className="grid grid-cols-3 gap-2">
             {rows.map(r => {
-              const owner = r.key === 'mine' ? 'Yours' : r.key === 'theirs' ? 'Theirs' : 'Neutral'
-              const cardName = r.card?.name || r.label
+              const cardName = r.card?.name || r.key
               return (
                 <button
                   key={r.key}
@@ -310,9 +321,6 @@ function SideScoredModal({ state, dispatch, rows, scorer, title, onClose }) {
                 >
                   <div className="text-xs font-medium leading-tight truncate w-full text-center">
                     {cardName}
-                  </div>
-                  <div className="text-[10px] uppercase tracking-wider text-gray-500 mt-0.5 leading-none">
-                    {owner}
                   </div>
                 </button>
               )

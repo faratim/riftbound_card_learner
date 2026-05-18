@@ -34,6 +34,7 @@ export default function GameSession({ onBack }) {
   const [hydrating, setHydrating] = useState(true)
   const [resumePrompt, setResumePrompt] = useState(null)
   const [view, setView] = useState('start') // 'start' | 'playing'
+  const [exitConfirm, setExitConfirm] = useState(false)
 
   // Check for an in-progress game on mount
   useEffect(() => {
@@ -142,14 +143,54 @@ export default function GameSession({ onBack }) {
   }
 
   // view === 'playing'
+  const goBack = () => dispatch({ type: 'BACK' })
+  const canGoBack = (state.step_history || []).length > 0
+
+  async function handleExitConfirm() {
+    if (state.id) {
+      await api.abandonGame(state.id).catch(console.error)
+    }
+    dispatch({ type: 'RESET' })
+    setExitConfirm(false)
+    setView('start')
+  }
+
   return (
     <div className="min-h-screen bg-gray-900 text-white flex flex-col">
-      <GameHeader state={state} />
+      <GameHeader
+        state={state}
+        onBack={canGoBack ? goBack : null}
+        onExit={() => setExitConfirm(true)}
+      />
+      {!state.current_turn_number && (
+        <div className="px-4 pt-3 max-w-md mx-auto w-full flex items-center justify-between">
+          {canGoBack ? (
+            <button
+              onClick={goBack}
+              className="text-sm text-gray-400 hover:text-gray-200"
+            >
+              ← Back
+            </button>
+          ) : <div />}
+          <button
+            onClick={() => setExitConfirm(true)}
+            className="text-sm text-gray-500 hover:text-gray-300"
+          >
+            Exit
+          </button>
+        </div>
+      )}
       <div className="flex-1 flex items-center justify-center p-6">
         <StepScreen state={state} dispatch={dispatch} session={session} />
       </div>
       {isFirstRoundDone(state) && (
         <FinishGameBar gameId={state.id} onFinished={() => setView('start')} />
+      )}
+      {exitConfirm && (
+        <ExitConfirmModal
+          onConfirm={handleExitConfirm}
+          onCancel={() => setExitConfirm(false)}
+        />
       )}
     </div>
   )
@@ -215,9 +256,7 @@ function StartScreen({ userEmail, onSignOut, onBack, resumePrompt, onResume, onD
   )
 }
 
-function GameHeader({ state }) {
-  // During pregame there's no score/turn to show — render an empty spacer
-  // so the layout doesn't jump when the game starts.
+function GameHeader({ state, onBack, onExit }) {
   if (state.current_turn_number <= 0 || !state.current_turn_player) {
     return null
   }
@@ -231,33 +270,47 @@ function GameHeader({ state }) {
   return (
     <div className="sticky top-0 z-30 bg-gray-950/85 backdrop-blur border-b border-gray-800">
       <div className="px-4 py-2 flex items-center justify-between gap-3 max-w-md mx-auto w-full">
-        <div className="flex items-baseline gap-3">
-          <div
-            className={`text-2xl font-bold leading-none ${winning ? 'text-yellow-300' : losing ? 'text-gray-200' : 'text-gray-200'}`}
-            style={winning ? { color: '#e9c349' } : {}}
-          >
-            {state.my_score}
-          </div>
-          <div className="text-xs text-gray-500">vs</div>
-          <div className={`text-2xl font-bold leading-none ${losing ? 'text-yellow-300' : 'text-gray-200'}`}
-            style={losing ? { color: '#e46540' } : {}}
-          >
-            {state.their_score}
-          </div>
-          <div className="text-[11px] text-gray-500 uppercase tracking-wider ml-1">
-            to {state.win_threshold ?? '?'}
+        <div className="flex items-center gap-3">
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="text-gray-400 hover:text-gray-200 text-sm leading-none pr-2"
+            >
+              ←
+            </button>
+          )}
+          <div className="flex items-baseline gap-3">
+            <div
+              className="text-2xl font-bold leading-none"
+              style={winning ? { color: '#e9c349' } : {}}
+            >
+              {state.my_score}
+            </div>
+            <div className="text-xs text-gray-500">vs</div>
+            <div
+              className="text-2xl font-bold leading-none"
+              style={losing ? { color: '#e46540' } : {}}
+            >
+              {state.their_score}
+            </div>
+            <div className="text-[11px] text-gray-500 uppercase tracking-wider ml-1">
+              to {state.win_threshold ?? '?'}
+            </div>
           </div>
         </div>
-        <div className="text-right">
+        <div className="text-right flex flex-col items-end gap-1">
           <div
             className="text-xs font-semibold uppercase tracking-widest leading-none"
             style={{ color: isMine ? '#e9c349' : '#e46540' }}
           >
             {turnLabel}
           </div>
-          {state.has_baron_pit && (
-            <div className="text-[10px] text-gray-500 mt-1 leading-none">Baron Pit</div>
-          )}
+          <button
+            onClick={onExit}
+            className="text-[11px] text-gray-600 hover:text-gray-400 leading-none"
+          >
+            Exit
+          </button>
         </div>
       </div>
     </div>
@@ -296,7 +349,7 @@ function StepScreen({ state, dispatch, session }) {
       return <LegendPicker label="Your Legend" onPick={pickAndAdvance('my_legend_card_id')} />
 
     case STEPS.PREGAME_LEGEND_THEIRS:
-      return <LegendPicker label="Their Legend" onPick={pickAndAdvance('their_legend_card_id')} />
+      return <LegendPicker label="Their Legend" onPick={pickAndAdvance('their_legend_card_id')} accent="#e46540" />
 
     case STEPS.PREGAME_BF_MINE:
       return (
@@ -331,7 +384,7 @@ function StepScreen({ state, dispatch, session }) {
     case STEPS.MY_FIRST_GOALS:    return <GoalsSet onNext={advance} />
 
     // First turn — theirs
-    case STEPS.THEIR_FIRST_TWO_DROP: return <TwoDrop state={state} dispatch={dispatch} />
+    case STEPS.THEIR_FIRST_TWO_DROP: return <TwoDrop state={state} dispatch={dispatch} accent="#e46540" />
 
     // Normal turn — mine (ABCDEFGH)
     case STEPS.MY_AWAKEN:    return <Awaken onNext={advance} />
@@ -365,6 +418,31 @@ function StepScreen({ state, dispatch, session }) {
         />
       )
   }
+}
+
+function ExitConfirmModal({ onConfirm, onCancel }) {
+  return (
+    <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-6">
+      <div className="w-full max-w-sm bg-gray-900 border border-gray-700 rounded-xl p-6 space-y-4">
+        <h3 className="text-lg font-semibold text-white">Exit game?</h3>
+        <p className="text-gray-400 text-sm">This game will be discarded. You can start a new one from the main screen.</p>
+        <div className="flex gap-3 pt-1">
+          <button
+            onClick={onCancel}
+            className="flex-1 py-3 rounded-lg font-medium bg-gray-800 hover:bg-gray-700 text-gray-200"
+          >
+            Keep Playing
+          </button>
+          <button
+            onClick={onConfirm}
+            className="flex-1 py-3 rounded-lg font-semibold bg-red-900/60 hover:bg-red-900/80 border border-red-800 text-red-200"
+          >
+            Discard & Exit
+          </button>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 function PlaceholderScreen({ label, sublabel, nextLabel = 'Next →', onNext }) {

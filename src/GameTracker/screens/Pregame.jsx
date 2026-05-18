@@ -3,13 +3,14 @@ import { getLegends, getBattlefields } from '../../lib/cards'
 import * as api from '../gameApi'
 import { STEPS } from '../gameState'
 
-export function LegendPicker({ label, onPick }) {
+export function LegendPicker({ label, onPick, accent }) {
   return (
-    <ScreenLayout title={label}>
+    <ScreenLayout title={label} accent={accent}>
       <CardSearch
         cards={getLegends()}
         placeholder="Search legends…"
         onPick={(card) => onPick(card.id)}
+        accent={accent}
       />
     </ScreenLayout>
   )
@@ -76,17 +77,21 @@ export function WinThresholdPicker({ state, session, dispatch }) {
   async function handlePick(threshold) {
     dispatch({ type: 'SET_FIELD', field: 'win_threshold', value: threshold })
     try {
-      const game = await api.createGame({
-        user_id: session.user.id,
-        my_legend_card_id: state.my_legend_card_id,
-        their_legend_card_id: state.their_legend_card_id,
-        my_battlefield_card_id: state.my_battlefield_card_id,
-        their_battlefield_card_id: state.their_battlefield_card_id,
-        win_threshold: threshold,
-        first_player: state.first_player,
-        current_step: state.current_step,
-      })
-      dispatch({ type: 'SET_GAME_ID', id: game.id })
+      if (state.id) {
+        await api.updateGame(state.id, { win_threshold: threshold })
+      } else {
+        const game = await api.createGame({
+          user_id: session.user.id,
+          my_legend_card_id: state.my_legend_card_id,
+          their_legend_card_id: state.their_legend_card_id,
+          my_battlefield_card_id: state.my_battlefield_card_id,
+          their_battlefield_card_id: state.their_battlefield_card_id,
+          win_threshold: threshold,
+          first_player: state.first_player,
+          current_step: state.current_step,
+        })
+        dispatch({ type: 'SET_GAME_ID', id: game.id })
+      }
     } catch (err) {
       console.error('createGame failed', err)
       alert('Failed to create game: ' + err.message)
@@ -110,10 +115,10 @@ export function WinThresholdPicker({ state, session, dispatch }) {
 
 // ----- Shared building blocks -----
 
-export function ScreenLayout({ title, sublabel, children }) {
+export function ScreenLayout({ title, sublabel, children, accent = '#e9c349' }) {
   return (
     <div className="w-full max-w-md mx-auto">
-      <h2 className="text-2xl font-semibold text-center mb-1" style={{ color: '#e9c349' }}>
+      <h2 className="text-2xl font-semibold text-center mb-1" style={{ color: accent }}>
         {title}
       </h2>
       {sublabel && (
@@ -125,7 +130,7 @@ export function ScreenLayout({ title, sublabel, children }) {
   )
 }
 
-export function TapToAdvance({ title, sublabel, onNext, nextLabel = 'Next' }) {
+export function TapToAdvance({ title, sublabel, onNext, nextLabel = 'Next', accent = '#e9c349' }) {
   // Whole tall area is clickable — tap anywhere within the main screen area to advance.
   return (
     <button
@@ -134,7 +139,7 @@ export function TapToAdvance({ title, sublabel, onNext, nextLabel = 'Next' }) {
       className="w-full min-h-[70vh] flex items-center justify-center cursor-pointer"
     >
       <div className="w-full max-w-md mx-auto pointer-events-none">
-        <h2 className="text-3xl font-semibold text-center mb-2" style={{ color: '#e9c349' }}>
+        <h2 className="text-3xl font-semibold text-center mb-2" style={{ color: accent }}>
           {title}
         </h2>
         {sublabel && (
@@ -166,9 +171,9 @@ export function BigButton({ children, onClick, variant = 'gold' }) {
   )
 }
 
-export function YesNoChoice({ title, sublabel, onPick }) {
+export function YesNoChoice({ title, sublabel, onPick, accent }) {
   return (
-    <ScreenLayout title={title} sublabel={sublabel}>
+    <ScreenLayout title={title} sublabel={sublabel} accent={accent}>
       <div className="grid grid-cols-2 gap-3 w-full">
         <BigButton onClick={() => onPick(true)} variant="gold">Yes</BigButton>
         <BigButton onClick={() => onPick(false)} variant="dark">No</BigButton>

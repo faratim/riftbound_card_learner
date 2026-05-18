@@ -59,7 +59,6 @@ const MY_FIRST_TURN_FLOW = [
 const THEIR_FIRST_TURN_FLOW = [
   STEPS.THEIR_FIRST_TWO_DROP,
   STEPS.THEIR_SCORING,
-  STEPS.THEIR_HANDOFF,
 ]
 
 const MY_NORMAL_TURN_FLOW = [
@@ -80,7 +79,6 @@ const MY_NORMAL_TURN_FLOW = [
 
 const THEIR_NORMAL_TURN_FLOW = [
   STEPS.THEIR_SCORING,
-  STEPS.THEIR_HANDOFF,
 ]
 
 export function isPregameStep(step) {
@@ -141,6 +139,8 @@ export const initialState = {
   my_score: 0,
   their_score: 0,
   scoring_events: [],
+
+  step_history: [],
 }
 
 export function reducer(state, action) {
@@ -163,7 +163,20 @@ export function reducer(state, action) {
       const wasLastStep = flow[flow.length - 1] === state.current_step
       const wasPregame = isPregameStep(state.current_step)
 
-      let next = { ...state, current_step: nextStep }
+      const historyEntry = {
+        current_step: state.current_step,
+        current_turn_number: state.current_turn_number,
+        current_turn_player: state.current_turn_player,
+        current_turn_two_drop: state.current_turn_two_drop,
+        current_turn_scoring: state.current_turn_scoring,
+        current_turn_id: state.current_turn_id,
+      }
+
+      let next = {
+        ...state,
+        current_step: nextStep,
+        step_history: [...(state.step_history || []), historyEntry],
+      }
 
       if (wasLastStep && wasPregame) {
         next.current_turn_number = 1
@@ -179,6 +192,17 @@ export function reducer(state, action) {
         next.current_turn_id = null
       }
       return next
+    }
+
+    case 'BACK': {
+      const history = state.step_history || []
+      if (history.length === 0) return state
+      const prev = history[history.length - 1]
+      return {
+        ...state,
+        ...prev,
+        step_history: history.slice(0, -1),
+      }
     }
 
     case 'SET_TWO_DROP':

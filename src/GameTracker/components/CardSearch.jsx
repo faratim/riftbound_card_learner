@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react'
 
-export default function CardSearch({ cards, onPick, placeholder = 'Search…' }) {
+export default function CardSearch({ cards, onPick, placeholder = 'Search…', accent }) {
   const [q, setQ] = useState('')
+  const [focused, setFocused] = useState(false)
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase()
@@ -13,14 +14,19 @@ export default function CardSearch({ cards, onPick, placeholder = 'Search…' })
     })
   }, [cards, q])
 
+  const focusBorderColor = accent || '#ca8a04'
+
   return (
     <div className="w-full flex flex-col gap-3">
       <input
         type="text"
         value={q}
         onChange={(e) => setQ(e.target.value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
         placeholder={placeholder}
-        className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:border-yellow-600"
+        className="w-full px-4 py-3 bg-gray-800 border rounded-lg text-white placeholder:text-gray-500 focus:outline-none"
+        style={{ borderColor: focused ? focusBorderColor : '#374151' }}
         autoFocus
       />
       <div className="flex-1 overflow-y-auto max-h-[60vh] space-y-2 pr-1">
