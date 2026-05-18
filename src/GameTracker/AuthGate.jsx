@@ -35,11 +35,11 @@ function MagicLinkForm({ onBack }) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-6 flex flex-col">
+    <div className="min-h-screen bg-gray-900 text-white p-6 flex flex-col relative">
       {onBack && (
         <button
           onClick={onBack}
-          className="self-start px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm mb-8"
+          className="absolute top-6 left-6 px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm"
         >
           ← Back
         </button>
